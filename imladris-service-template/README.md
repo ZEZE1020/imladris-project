@@ -1,72 +1,20 @@
-# Imladris Service Template - The Application
+# Imladris Service Template
 
-The "Golden Path" for developing Zero Trust banking services in the Imladris platform.
+Production-ready Go microservice template for the Imladris platform.
 
 ## Overview
 
-This service template provides a production-ready foundation for developing microservices in the Imladris zero-trust banking environment:
+Provides a "golden path" for developing zero-trust banking services with:
+- HTTP server with health check endpoints
+- Prometheus metrics export
+- Kubernetes manifests and CI/CD pipeline
+- Distroless container with non-root execution
+- VPC Lattice service mesh integration
 
-- **Zero Trust Security**: Built-in security controls and compliance
-- **VPC Lattice Ready**: Service mesh integration
-- **GitOps Deployment**: Automated CI/CD via ArgoCD
-- **Observability**: Prometheus metrics and structured logging
-- **Container Security**: Distroless images and non-root execution
-
-## Service Supply Chain
-
-```mermaid
-sequenceDiagram
-    participant Developer
-    participant GitHub
-    participant Build as GitHub Actions
-    participant ECR as Amazon ECR
-    participant GitOps as GitOps Repository
-    participant ArgoCD
-    participant K8s as EKS Fargate
-
-    Developer->>GitHub: 1. Push code changes
-    GitHub->>Build: 2. Trigger CI/CD workflow
-
-    rect rgb(255, 248, 220)
-        Note over Build: Security & Validation Phase
-        Build->>Build: 3a. Run security scans (GoSec)
-        Build->>Build: 3b. Validate K8s manifests
-        Build->>Build: 3c. Run Conftest policy checks
-    end
-
-    rect rgb(230, 248, 255)
-        Note over Build,ECR: Build & Push Phase
-        Build->>Build: 4a. Run tests & build Go binary
-        Build->>Build: 4b. Build container image (distroless)
-        Build->>ECR: 4c. Push image to ECR
-        Build->>Build: 4d. Generate SBOM & vulnerability scan
-    end
-
-    rect rgb(248, 255, 230)
-        Note over Build,ArgoCD: GitOps Update Phase
-        Build->>GitOps: 5a. Update deployment manifests
-        Build->>GitOps: 5b. Commit image tag changes
-        GitOps->>ArgoCD: 5c. Trigger sync via webhook
-    end
-
-    rect rgb(255, 230, 248)
-        Note over ArgoCD,K8s: Deployment Phase
-        ArgoCD->>ArgoCD: 6a. Detect manifest changes
-        ArgoCD->>ArgoCD: 6b. Validate with policies
-        ArgoCD->>K8s: 6c. Deploy to EKS Fargate
-        K8s->>ArgoCD: 6d. Report deployment status
-        ArgoCD->>Developer: 6e. ✅ Deployment complete
-    end
-
-    Note over Developer,K8s: 🚀 Zero Trust Service Running
-```
-
-## Architecture
-
-### Service Structure
+## Service Structure
 
 ```go
-// main.go - Zero Trust HTTP Server
+// main.go - HTTP server with:
 ├── Health & Readiness Endpoints (/health, /ready)
 ├── Business Logic (/api/v1/accounts)
 ├── Prometheus Metrics (/metrics on port 9090)
@@ -74,24 +22,9 @@ sequenceDiagram
 └── Graceful Shutdown (SIGTERM handling)
 ```
 
-### Security Features
-
-- **Non-root Execution**: Runs as user ID 65534
-- **Distroless Base Image**: No shell or package manager
-- **Read-only Filesystem**: Prevents runtime modifications
-- **Security Context**: Comprehensive pod security controls
-- **Resource Limits**: CPU, memory, and storage constraints
-
-### Observability
-
-- **Structured Logging**: JSON format for log aggregation
-- **Prometheus Metrics**: HTTP requests, business operations
-- **Health Checks**: Kubernetes liveness, readiness, startup probes
-- **Distributed Tracing**: Ready for OpenTelemetry integration
-
 ## Getting Started
 
-### 1. Clone and Customize
+### Clone and Customize
 
 ```bash
 # Clone the template
@@ -110,7 +43,7 @@ find . -name "*.yaml" -o -name "*.go" -o -name "*.yml" | \
   xargs sed -i "s/banking-core-service/$SERVICE_NAME/g"
 ```
 
-### 2. Develop Locally
+### Develop Locally
 
 ```bash
 # Install dependencies
@@ -126,7 +59,7 @@ export LOG_LEVEL=debug
 go run main.go
 ```
 
-### 3. Test Endpoints
+### Test Endpoints
 
 ```bash
 # Health check
@@ -142,7 +75,7 @@ curl http://localhost:9090/metrics
 curl http://localhost:8080/.well-known/service
 ```
 
-### 4. Container Testing
+### Container Testing
 
 ```bash
 # Build container
@@ -161,29 +94,28 @@ docker run --rm -v $(pwd):/app \
 
 ## CI/CD Pipeline
 
-### Security Gates
+The GitHub Actions workflow includes:
 
-1. **Code Security**: GoSec static analysis
-2. **Container Security**: Trivy vulnerability scanning
-3. **Policy Validation**: Conftest/OPA manifest validation
-4. **SBOM Generation**: Software bill of materials
-5. **Compliance Checks**: Banking regulation compliance
+### Security Gates
+- GoSec static code analysis
+- Trivy container vulnerability scanning
+- Conftest/OPA manifest validation
+- SBOM generation
+- Compliance checks
 
 ### Build Process
-
-1. **Test Execution**: Unit tests with coverage reporting
-2. **Binary Build**: Statically linked Go binary
-3. **Container Build**: Multi-stage Docker build with distroless base
-4. **Image Push**: Secure push to Amazon ECR
-5. **Manifest Update**: GitOps repository update
+- Unit tests with coverage
+- Statically linked Go binary
+- Multi-stage Docker build with distroless base
+- Secure push to Amazon ECR
+- GitOps manifest update
 
 ### Deployment Flow
-
-1. **GitOps Commit**: Updated manifests pushed to GitOps repo
-2. **ArgoCD Sync**: Automatic deployment to EKS Fargate
-3. **Health Verification**: Kubernetes health checks
-4. **Service Registration**: VPC Lattice service mesh integration
-5. **Monitoring Setup**: Prometheus scraping configuration
+- GitOps commit to update manifests
+- ArgoCD automatic sync to EKS Fargate
+- Kubernetes health checks
+- VPC Lattice service mesh registration
+- Prometheus monitoring setup
 
 ## Configuration
 
@@ -193,8 +125,8 @@ docker run --rm -v $(pwd):/app \
 |----------|-------------|---------|
 | `PORT` | HTTP server port | `8080` |
 | `METRICS_PORT` | Metrics server port | `9090` |
-| `LOG_LEVEL` | Logging level (debug, info, warn, error) | `info` |
-| `LOG_FORMAT` | Log format (json, text) | `json` |
+| `LOG_LEVEL` | Logging level | `info` |
+| `LOG_FORMAT` | Log format (json/text) | `json` |
 | `SERVICE_NAME` | Service identifier | `banking-core-service` |
 | `ENVIRONMENT` | Deployment environment | `dev` |
 | `AWS_REGION` | AWS region | `us-east-1` |
@@ -202,7 +134,6 @@ docker run --rm -v $(pwd):/app \
 ### Kubernetes Resources
 
 ```yaml
-# Resource requests/limits
 resources:
   limits:
     cpu: "500m"
@@ -214,18 +145,30 @@ resources:
     ephemeral-storage: "100Mi"
 ```
 
+## Security Features
+
+### Container Security
+- Non-root execution (user ID 65534)
+- Distroless base image (no shell or package manager)
+- Read-only filesystem
+- Security context with comprehensive pod controls
+- CPU, memory, and storage limits
+
+### Observability
+- Structured JSON logging
+- Prometheus metrics for HTTP requests and business operations
+- Kubernetes liveness, readiness, and startup probes
+- OpenTelemetry integration ready
+
 ## VPC Lattice Integration
 
-### Service Registration
+Services automatically integrate with VPC Lattice through:
+- Service annotations for VPC Lattice load balancer
+- Kubernetes probes become Lattice health checks
+- AWS IAM-based service-to-service authentication
+- DNS-based service discovery
 
-The service automatically integrates with VPC Lattice through:
-
-- **Service Annotations**: LoadBalancer annotations for VPC Lattice
-- **Health Checks**: Kubernetes probes become Lattice health checks
-- **IAM Authentication**: AWS IAM-based service-to-service auth
-- **Service Discovery**: DNS-based service resolution
-
-### Example Service Call
+Example service call with IAM authentication:
 
 ```go
 // Call another service via VPC Lattice
@@ -239,18 +182,17 @@ signer.Sign(req, nil, "vpc-lattice", "us-east-1", time.Now())
 resp, err := client.Do(req)
 ```
 
-## Monitoring and Alerting
+## Monitoring
 
 ### Metrics
 
-- `http_requests_total`: Total HTTP requests by method, endpoint, status
+- `http_requests_total`: HTTP requests by method, endpoint, status
 - `http_request_duration_seconds`: Request latency histogram
-- `business_operations_total`: Business-specific operation counters
+- `business_operations_total`: Business operation counters
 
 ### Alerts
 
 ```yaml
-# Example Prometheus alerts
 groups:
 - name: my-service
   rules:
@@ -267,22 +209,20 @@ groups:
       summary: "High latency detected"
 ```
 
-## Security Compliance
+## Compliance
 
 ### Banking Regulations
-
-- **PCI DSS**: No sensitive data logging, encrypted communications
-- **SOX**: Audit trails, change management via GitOps
-- **GDPR**: Data protection, right to erasure support
-- **FFIEC**: Risk management, incident response procedures
+- PCI DSS: No sensitive data logging, encrypted communications
+- SOX: Audit trails, change management via GitOps
+- GDPR: Data protection, right to erasure support
+- FFIEC: Risk management, incident response procedures
 
 ### Zero Trust Controls
-
-- **Identity Verification**: AWS IAM service-to-service authentication
-- **Least Privilege**: Minimal container permissions
-- **Encryption**: TLS for all communications via VPC Lattice
-- **Monitoring**: Comprehensive logging and metrics
-- **Policy Enforcement**: OPA/Conftest validation at build and runtime
+- Identity verification: AWS IAM service-to-service authentication
+- Least privilege: Minimal container permissions
+- Encryption: TLS for all communications via VPC Lattice
+- Monitoring: Comprehensive logging and metrics
+- Policy enforcement: OPA/Conftest validation
 
 ## Troubleshooting
 
@@ -315,13 +255,9 @@ argocd app rollback my-service $(argocd app history my-service -o id | tail -2 |
 kubectl set image deployment/my-service my-service=image:previous-tag
 ```
 
-## Integration Points
+## Integration
 
-- **[imladris-platform](../imladris-platform)**: EKS cluster and VPC Lattice network
-- **[imladris-governance](../imladris-governance)**: Policy validation during build
-- **[imladris-gitops](../imladris-gitops)**: Deployment manifests and ArgoCD sync
-
----
-
-**The Golden Path to Production**
-*Secure by default. Compliant by design. Deployed with confidence.*
+Works with:
+- [imladris-platform](../imladris-platform): EKS cluster and VPC Lattice
+- [imladris-governance](../imladris-governance): Policy validation
+- [imladris-gitops](../imladris-gitops): Deployment manifests and ArgoCD
