@@ -1,0 +1,54 @@
+# Go specific
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Build artifacts
+banking-core-service
+dist/
+build/
+
+# Coverage files
+coverage.out
+coverage.html
+
+# Dependency directories
+vendor/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+*.env
+
+# Security scan results
+gosec-report.sarif
+trivy-results.sarif
+sbom.spdx.json
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# Logs
+*.log

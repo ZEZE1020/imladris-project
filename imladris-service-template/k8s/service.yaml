@@ -1,0 +1,63 @@
+# Kubernetes Service Template
+# This will be copied to GitOps repo during CI/CD
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: banking-core-service
+  namespace: banking-core
+  labels:
+    app: banking-core-service
+    tier: core
+    app.kubernetes.io/name: banking-core-service
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: imladris-platform
+spec:
+  type: ClusterIP
+  selector:
+    app: banking-core-service
+    version: v1.0.0
+
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: metrics
+    protocol: TCP
+
+---
+# Service Account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: banking-core-service
+  namespace: banking-core
+  labels:
+    app.kubernetes.io/name: banking-core-service
+    app.kubernetes.io/part-of: imladris-platform
+  annotations:
+    # This will be updated with actual IAM role ARN
+    eks.amazonaws.com/role-arn: "UPDATE_ME"
+
+---
+# Service Monitor for Prometheus
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: banking-core-service
+  namespace: banking-core
+  labels:
+    app: banking-core-service
+    app.kubernetes.io/name: banking-core-service
+    app.kubernetes.io/part-of: imladris-platform
+spec:
+  selector:
+    matchLabels:
+      app: banking-core-service
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics

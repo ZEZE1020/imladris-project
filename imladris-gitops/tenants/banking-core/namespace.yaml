@@ -1,0 +1,96 @@
+# Banking Core Namespace
+# Dedicated namespace for core banking applications
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: banking-core
+  labels:
+    name: banking-core
+    tier: core
+    compliance: pci-dss
+    data-classification: restricted
+    app.kubernetes.io/name: banking-core
+    app.kubernetes.io/part-of: imladris-platform
+
+---
+# Network Policy - Default Deny All
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: banking-core
+  labels:
+    app.kubernetes.io/name: default-deny-all
+    app.kubernetes.io/part-of: imladris-platform
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+
+---
+# Network Policy - Allow ArgoCD Access
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-argocd
+  namespace: banking-core
+  labels:
+    app.kubernetes.io/name: allow-argocd
+    app.kubernetes.io/part-of: imladris-platform
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: argocd
+    ports:
+    - protocol: TCP
+      port: 8080
+
+---
+# Network Policy - Allow VPC Lattice Communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-vpc-lattice
+  namespace: banking-core
+  labels:
+    app.kubernetes.io/name: allow-vpc-lattice
+    app.kubernetes.io/part-of: imladris-platform
+spec:
+  podSelector:
+    matchLabels:
+      network-policy: vpc-lattice-enabled
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          network-policy: vpc-lattice-enabled
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8443
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          network-policy: vpc-lattice-enabled
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8443
+  # Allow egress to AWS services via VPC endpoints
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443

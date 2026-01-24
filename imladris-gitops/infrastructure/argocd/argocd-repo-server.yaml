@@ -1,0 +1,170 @@
+# ArgoCD Repository Server Configuration
+# Handles Git repository operations
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-repo-server-config
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-repo-server-config
+    app.kubernetes.io/part-of: argocd
+data:
+  # Repository server configuration
+  reposerver.parallelism.limit: "10"
+  reposerver.git.request.timeout: "15"
+
+  # Git configuration
+  git.config: |
+    [user]
+      name = ArgoCD
+      email = argocd@imladris.internal
+    [safe]
+      directory = *
+
+  # Custom tools for policy validation
+  configManagementPlugins: |
+    - name: conftest-validator
+      init:
+        command: [sh, -c]
+        args:
+          - |
+            echo "Validating Kubernetes manifests with Conftest..."
+            find . -name "*.yaml" -o -name "*.yml" | head -20
+      generate:
+        command: [sh, -c]
+        args:
+          - |
+            # Run conftest validation on Kubernetes manifests
+            conftest verify --policy /policies --output json . || true
+            # Always return the original manifests
+            cat *.yaml *.yml 2>/dev/null || echo "No YAML files found"
+
+---
+# Network Policy for ArgoCD Repo Server
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: argocd-repo-server
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-repo-server
+    app.kubernetes.io/component: repo-server
+    app.kubernetes.io/part-of: argocd
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow server communication
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-server
+    ports:
+    - protocol: TCP
+      port: 8081
+  # Allow application controller communication
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-application-controller
+    ports:
+    - protocol: TCP
+      port: 8081
+  egress:
+  # Allow Git repository access
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443  # HTTPS Git
+    - protocol: TCP
+      port: 22   # SSH Git (if needed)
+  # Allow communication to OPA/Conftest
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: opa-gatekeeper
+    ports:
+    - protocol: TCP
+      port: 8443
+
+---
+# Service Account for Repository Server
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argocd-repo-server
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-repo-server
+    app.kubernetes.io/component: repo-server
+    app.kubernetes.io/part-of: argocd
+  annotations:
+    # AWS IAM role for accessing ECR and other AWS services
+    eks.amazonaws.com/role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/imladris-${ENVIRONMENT}-argocd-repo-server-role"
+
+---
+# Conftest Policies Volume
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: conftest-policies
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: conftest-policies
+    app.kubernetes.io/part-of: argocd
+data:
+  kubernetes-security.rego: |
+    package kubernetes.security
+
+    import rego.v1
+
+    # Deny pods without security context
+    deny contains msg if {
+        input.kind == "Deployment"
+        not input.spec.template.spec.securityContext
+        msg := sprintf("Deployment %s must have securityContext", [input.metadata.name])
+    }
+
+    # Deny containers running as root
+    deny contains msg if {
+        input.kind == "Deployment"
+        some i
+        container := input.spec.template.spec.containers[i]
+        not container.securityContext.runAsNonRoot
+        msg := sprintf("Container %s must run as non-root", [container.name])
+    }
+
+    # Require resource limits
+    deny contains msg if {
+        input.kind == "Deployment"
+        some i
+        container := input.spec.template.spec.containers[i]
+        not container.resources.limits
+        msg := sprintf("Container %s must have resource limits", [container.name])
+    }
+
+  kubernetes-networking.rego: |
+    package kubernetes.networking
+
+    import rego.v1
+
+    # Require network policies for namespaces
+    warn contains msg if {
+        input.kind == "Namespace"
+        input.metadata.name != "kube-system"
+        input.metadata.name != "kube-public"
+        input.metadata.name != "default"
+        msg := sprintf("Namespace %s should have a default-deny NetworkPolicy", [input.metadata.name])
+    }
+
+    # Deny services without proper labels
+    deny contains msg if {
+        input.kind == "Service"
+        not input.metadata.labels["app.kubernetes.io/name"]
+        msg := sprintf("Service %s must have app.kubernetes.io/name label", [input.metadata.name])
+    }

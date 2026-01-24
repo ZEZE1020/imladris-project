@@ -1,0 +1,161 @@
+# ArgoCD Server Configuration
+# Customized for Zero Trust Environment
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-server-config
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-server-config
+    app.kubernetes.io/part-of: argocd
+data:
+  # Server configuration
+  url: https://argocd.imladris.internal
+
+  # OIDC configuration for AWS IAM Identity Center
+  oidc.config: |
+    name: AWS IAM Identity Center
+    issuer: https://portal.sso.us-east-1.amazonaws.com/saml/assertion/xxxxxxxx
+    clientId: ${OIDC_CLIENT_ID}
+    clientSecret: ${OIDC_CLIENT_SECRET}
+    requestedScopes: ["openid", "profile", "email"]
+    requestedIDTokenClaims: {"groups": {"essential": true}}
+
+  # RBAC configuration
+  policy.default: role:readonly
+  policy.csv: |
+    # Platform Administrators
+    p, role:platform-admin, applications, *, */*, allow
+    p, role:platform-admin, clusters, *, *, allow
+    p, role:platform-admin, repositories, *, *, allow
+    p, role:platform-admin, logs, get, */*, allow
+    p, role:platform-admin, exec, create, */*, allow
+
+    # Developers
+    p, role:developer, applications, get, */*, allow
+    p, role:developer, applications, sync, */*, allow
+    p, role:developer, applications, action/*, */*, allow
+    p, role:developer, logs, get, */*, allow
+
+    # Read-only users
+    p, role:readonly, applications, get, */*, allow
+    p, role:readonly, logs, get, */*, allow
+    p, role:readonly, repositories, get, *, allow
+    p, role:readonly, clusters, get, *, allow
+
+    # Group mappings (AWS IAM Identity Center groups)
+    g, imladris-platform-admins, role:platform-admin
+    g, imladris-developers, role:developer
+    g, imladris-viewers, role:readonly
+
+  # TLS configuration
+  tls.config: |
+    certificates:
+      - |
+        -----BEGIN CERTIFICATE-----
+        # TLS certificate for argocd.imladris.internal
+        -----END CERTIFICATE-----
+
+  # Repository configuration
+  repositories: |
+    - type: git
+      url: https://github.com/your-org/imladris-gitops.git
+      name: imladris-gitops
+      project: imladris-platform
+    - type: git
+      url: https://github.com/your-org/imladris-service-template.git
+      name: imladris-service-template
+      project: imladris-platform
+
+---
+# ArgoCD Server Service (VPC Lattice)
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-server-lattice
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-server-lattice
+    app.kubernetes.io/component: server
+    app.kubernetes.io/part-of: argocd
+  annotations:
+    # VPC Lattice service mesh integration
+    service.beta.kubernetes.io/aws-load-balancer-type: "external"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internal"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "https"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "https"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/healthz"
+    # VPC Lattice specific
+    service.beta.kubernetes.io/aws-load-balancer-attributes: |
+      vpc_lattice.service_network.arn=arn:aws:vpc-lattice:${AWS_REGION}:${AWS_ACCOUNT_ID}:servicenetwork/${VPC_LATTICE_SERVICE_NETWORK_ID}
+      vpc_lattice.auth_type=AWS_IAM
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: argocd-server
+  ports:
+  - name: server
+    port: 443
+    protocol: TCP
+    targetPort: 8080
+  - name: grpc
+    port: 443
+    protocol: TCP
+    targetPort: 8080
+
+---
+# Network Policy for ArgoCD Server
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: argocd-server
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-server
+    app.kubernetes.io/component: server
+    app.kubernetes.io/part-of: argocd
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-server
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow VPC Lattice traffic
+  - from: []
+    ports:
+    - protocol: TCP
+      port: 8080
+  # Allow repo server communication
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-repo-server
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  # Allow communication to repo server
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-repo-server
+    ports:
+    - protocol: TCP
+      port: 8081
+  # Allow communication to Kubernetes API
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 6443
+  # Allow OIDC communication
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80

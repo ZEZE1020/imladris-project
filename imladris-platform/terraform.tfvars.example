@@ -1,0 +1,17 @@
+# Imladris Platform Configuration Example
+# Copy to terraform.tfvars and customize
+
+aws_region     = "us-east-1"
+environment    = "dev"
+vpc_cidr       = "10.0.0.0/16"
+eks_version    = "1.28"
+
+availability_zones = [
+  "us-east-1a",
+  "us-east-1b",
+  "us-east-1c"
+]
+
+# Replace with your actual IAM Identity Center instance ARN
+# Format: arn:aws:sso:::instance/ssoins-xxxxxxxxxxxxxxxxx
+identity_center_instance_arn = "arn:aws:sso:::instance/ssoins-xxxxxxxxxxxxxxxxx"

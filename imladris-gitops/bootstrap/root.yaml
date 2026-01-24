@@ -1,0 +1,135 @@
+# Imladris GitOps - App of Apps Pattern
+# Root application that manages all other applications
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: imladris-root
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: imladris-root
+    app.kubernetes.io/part-of: imladris-platform
+spec:
+  project: default
+
+  # Source configuration
+  source:
+    repoURL: https://github.com/your-org/imladris-gitops.git
+    targetRevision: HEAD
+    path: tenants
+    directory:
+      recurse: true
+      include: '**/application.yaml'
+
+  # Destination cluster
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  # Sync policy
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # Health and sync settings
+  revisionHistoryLimit: 10
+
+  # Ignore differences in certain fields
+  ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+    - /spec/replicas
+
+  # Finalizers
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+
+---
+# ArgoCD Project for Imladris Platform
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: imladris-platform
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: imladris-platform-project
+spec:
+  description: Imladris Zero Trust Banking Platform
+
+  # Source repositories
+  sourceRepos:
+  - https://github.com/your-org/imladris-gitops.git
+  - https://github.com/your-org/imladris-service-template.git
+
+  # Allowed destinations
+  destinations:
+  - namespace: 'banking-*'
+    server: https://kubernetes.default.svc
+  - namespace: 'platform-*'
+    server: https://kubernetes.default.svc
+  - namespace: 'monitoring'
+    server: https://kubernetes.default.svc
+  - namespace: 'istio-system'
+    server: https://kubernetes.default.svc
+  - namespace: 'argocd'
+    server: https://kubernetes.default.svc
+
+  # RBAC policies
+  roles:
+  - name: platform-admin
+    description: Platform administrators
+    policies:
+    - p, proj:imladris-platform:platform-admin, applications, *, imladris-platform/*, allow
+    - p, proj:imladris-platform:platform-admin, logs, get, imladris-platform/*, allow
+    - p, proj:imladris-platform:platform-admin, exec, create, imladris-platform/*, allow
+    groups:
+    - imladris-platform-admins
+
+  - name: developer
+    description: Application developers
+    policies:
+    - p, proj:imladris-platform:developer, applications, get, imladris-platform/*, allow
+    - p, proj:imladris-platform:developer, applications, sync, imladris-platform/*, allow
+    - p, proj:imladris-platform:developer, logs, get, imladris-platform/*, allow
+    groups:
+    - imladris-developers
+
+  # Resource whitelist
+  clusterResourceWhitelist:
+  - group: ''
+    kind: Namespace
+  - group: 'rbac.authorization.k8s.io'
+    kind: ClusterRole
+  - group: 'rbac.authorization.k8s.io'
+    kind: ClusterRoleBinding
+
+  namespaceResourceWhitelist:
+  - group: ''
+    kind: Service
+  - group: ''
+    kind: ServiceAccount
+  - group: ''
+    kind: ConfigMap
+  - group: ''
+    kind: Secret
+  - group: 'apps'
+    kind: Deployment
+  - group: 'apps'
+    kind: StatefulSet
+  - group: 'networking.k8s.io'
+    kind: NetworkPolicy
+  - group: 'policy'
+    kind: PodSecurityPolicy

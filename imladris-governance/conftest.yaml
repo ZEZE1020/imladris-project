@@ -1,0 +1,35 @@
+# Conftest Configuration for Imladris Governance
+# Policy-as-Code enforcement for Terraform plans
+
+policy: policies
+data: policies
+output: json
+combine: false
+trace: false
+
+# Terraform specific settings
+parser: json
+input: tfplan.json
+
+# Namespace settings for organizing policies
+namespace:
+  - terraform.security
+  - terraform.networking
+  - terraform.compute
+
+# Failure threshold
+fail-on-warn: false
+
+# Output configuration
+quiet: false
+no-color: false
+
+# Policy exceptions (use with caution)
+exceptions:
+  # Allow certain resources to bypass specific rules
+  # Example: VPC Lattice services can have public access for health checks
+  - policy: "terraform.security.deny[_]"
+    resources:
+      - "aws_vpclattice_service.*"
+    conditions:
+      - "contains(message, 'VPC Lattice')"

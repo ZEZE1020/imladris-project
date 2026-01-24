@@ -1,0 +1,26 @@
+# OPA and Conftest files
+*.json
+tfplan.json
+
+# Test files
+test_output/
+*.test
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Environment files
+.env
+.env.*

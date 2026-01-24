@@ -1,0 +1,103 @@
+# VPC Lattice Service for Banking Core
+# External service mesh communication via AWS VPC Lattice
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vpc-lattice-config
+  namespace: banking-core
+  labels:
+    app.kubernetes.io/name: vpc-lattice-config
+    app.kubernetes.io/part-of: imladris-platform
+data:
+  service_name: "banking-core-service"
+  service_network: "imladris-${ENVIRONMENT}-lattice"
+  auth_type: "AWS_IAM"
+  dns_name: "banking-core.imladris.${ENVIRONMENT}.local"
+
+---
+# AWS Load Balancer Controller Service
+# This creates the VPC Lattice service automatically
+apiVersion: v1
+kind: Service
+metadata:
+  name: banking-core-lattice
+  namespace: banking-core
+  labels:
+    app: banking-core-service
+    tier: core
+    service-type: vpc-lattice
+    app.kubernetes.io/name: banking-core-lattice
+    app.kubernetes.io/component: service-mesh
+    app.kubernetes.io/part-of: imladris-platform
+  annotations:
+    # AWS Load Balancer Controller annotations for VPC Lattice
+    service.beta.kubernetes.io/aws-load-balancer-type: "external"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internal"
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "http"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/health"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval-seconds: "10"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout-seconds: "5"
+    service.beta.kubernetes.io/aws-load-balancer-healthy-threshold-count: "2"
+    service.beta.kubernetes.io/aws-load-balancer-unhealthy-threshold-count: "3"
+    # VPC Lattice specific annotations
+    service.beta.kubernetes.io/aws-load-balancer-attributes: |
+      vpc_lattice.service_network.arn=arn:aws:vpc-lattice:${AWS_REGION}:${AWS_ACCOUNT_ID}:servicenetwork/${VPC_LATTICE_SERVICE_NETWORK_ID}
+      vpc_lattice.auth_type=AWS_IAM
+spec:
+  type: LoadBalancer
+  selector:
+    app: banking-core-service
+    version: v1.0.0
+
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+    protocol: TCP
+
+---
+# IAM Policy for VPC Lattice Access
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vpc-lattice-iam-policy
+  namespace: banking-core
+  labels:
+    app.kubernetes.io/name: vpc-lattice-iam-policy
+    app.kubernetes.io/part-of: imladris-platform
+data:
+  policy.json: |
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "vpc-lattice:GetService",
+            "vpc-lattice:ListServices",
+            "vpc-lattice:GetTargetGroup",
+            "vpc-lattice:RegisterTargets",
+            "vpc-lattice:DeregisterTargets"
+          ],
+          "Resource": [
+            "arn:aws:vpc-lattice:${AWS_REGION}:${AWS_ACCOUNT_ID}:service/*",
+            "arn:aws:vpc-lattice:${AWS_REGION}:${AWS_ACCOUNT_ID}:targetgroup/*"
+          ]
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "vpc-lattice:Invoke"
+          ],
+          "Resource": "arn:aws:vpc-lattice:${AWS_REGION}:${AWS_ACCOUNT_ID}:service/*/banking-core-service",
+          "Condition": {
+            "StringEquals": {
+              "vpc-lattice:ServiceNetwork": "arn:aws:vpc-lattice:${AWS_REGION}:${AWS_ACCOUNT_ID}:servicenetwork/${VPC_LATTICE_SERVICE_NETWORK_ID}"
+            }
+          }
+        }
+      ]
+    }

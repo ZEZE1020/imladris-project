@@ -1,0 +1,146 @@
+# Kubernetes Deployment Template
+# This will be copied to GitOps repo during CI/CD
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: banking-core-service
+  namespace: banking-core
+  labels:
+    app: banking-core-service
+    version: v1.0.0
+    tier: core
+    app.kubernetes.io/name: banking-core-service
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: imladris-platform
+    app.kubernetes.io/managed-by: argocd
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app: banking-core-service
+      version: v1.0.0
+
+  template:
+    metadata:
+      labels:
+        app: banking-core-service
+        version: v1.0.0
+        tier: core
+        network-policy: vpc-lattice-enabled
+      annotations:
+        # This will be updated by CI/CD pipeline
+        config/checksum: "UPDATE_ME"
+        # Security annotations
+        seccomp.security.alpha.kubernetes.io/pod: runtime/default
+    spec:
+      # Security Context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+
+      # Service Account
+      serviceAccountName: banking-core-service
+      automountServiceAccountToken: true
+
+      containers:
+      - name: banking-core
+        # This will be updated by CI/CD pipeline
+        image: UPDATE_ME
+        imagePullPolicy: Always
+
+        # Security Context
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 65534
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+
+        # Ports
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+
+        # Environment Variables
+        env:
+        - name: PORT
+          value: "8080"
+        - name: METRICS_PORT
+          value: "9090"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: SERVICE_NAME
+          value: "banking-core-service"
+        - name: ENVIRONMENT
+          value: "UPDATE_ME"
+        - name: AWS_REGION
+          value: "UPDATE_ME"
+
+        # Resource Limits
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+            ephemeral-storage: "1Gi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+            ephemeral-storage: "100Mi"
+
+        # Health Checks
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+        # Volume Mounts
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+
+      volumes:
+      - name: tmp
+        emptyDir: {}
+
+      # Pod Anti-Affinity
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - banking-core-service
+              topologyKey: kubernetes.io/hostname

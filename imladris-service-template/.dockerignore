@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+
+# CI/CD
+.github/
+*.yml
+*.yaml
+
+# Documentation
+README.md
+*.md
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Go specific
+*.test
+*.out
+coverage.html
+
+# Build artifacts
+dist/
+build/
+
+# Kubernetes manifests
+k8s/
+
+# Environment files
+.env*
+*.env
+
+# Logs
+*.log
+
+# Security scan results
+*.sarif
+*.spdx.json
