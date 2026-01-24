@@ -12,135 +12,61 @@ Imladris transforms traditional banking infrastructure into a modern, secure, an
 - **🔄 Automated Remediation**: Security violations are reverted automatically using EventBridge + SSM
 - **📊 Visual Clarity**: Every repository contains Mermaid diagrams explaining its logic
 
-## 🏗️ Complete Architecture
+## 🏗️ Interactive Architecture Diagrams
 
-The platform consists of four interconnected layers working together to provide a secure, compliant, and developer-friendly banking infrastructure.
+The platform consists of interconnected layers working together to provide a secure, compliant, and developer-friendly banking infrastructure.
 
-### Infrastructure Layer (AWS Foundation)
-```mermaid
-graph TB
-    subgraph "AWS Account - Tier-1 Investment Bank"
-        subgraph "VPC - imladris-prod-vpc (10.0.0.0/16)"
-            VPCLattice[VPC Lattice Service Network<br/>Zero Trust Service Mesh]
+### 📊 View the Complete Architecture
 
-            subgraph "Private Subnet AZ-1a"
-                Endpoints[VPC Endpoints<br/>Private AWS API Access]
-            end
+**Interactive diagrams are available in the Canvas tab above!** These provide a comprehensive view of the entire platform with:
 
-            subgraph "Private Subnet AZ-1b"
-                subgraph "EKS Cluster - imladris-prod-cluster"
-                    FargateProfile[Fargate Profile<br/>Serverless Compute]
+#### **🎯 Simplified Platform Overview**
+- **4-Layer Architecture**: Development → Policy → Infrastructure → Applications
+- **Component Relationships**: Clear data flow and dependencies
+- **Technology Stack**: Visual representation of all tools and services
 
-                    subgraph "banking-core Namespace"
-                        BankingService[Banking Core Service<br/>Go Microservice]
-                    end
+#### **🏗️ Complete Zero Trust Architecture**
+- **AWS Infrastructure**: VPC, EKS Fargate, VPC Lattice service mesh
+- **Security Controls**: IAM Identity Center, AWS Config, EventBridge automation
+- **CI/CD Pipeline**: GitHub Actions → ECR → GitOps → ArgoCD deployment
+- **Observability Stack**: Prometheus, Grafana, CloudWatch integration
 
-                    subgraph "argocd Namespace"
-                        ArgoCDServer[ArgoCD Server<br/>GitOps Engine]
-                    end
-                end
-            end
+### 🔄 Key Architectural Flows
 
-            subgraph "Private Subnet AZ-1c"
-                Reserved[Reserved for Future Use]
-            end
-        end
+The interactive diagrams show these critical patterns:
 
-        subgraph "Governance & Compliance"
-            AWSConfig[AWS Config<br/>Compliance Monitoring]
-            EventBridge[EventBridge<br/>Event-Driven Remediation]
-            SSMAutomation[Systems Manager<br/>Auto-Remediation]
-        end
+1. **🔄 Self-Healing Loop**: AWS Config detects violations → EventBridge triggers → SSM auto-fixes
+2. **🚀 CI/CD Pipeline**: Code push → Security validation → Container build → GitOps deployment
+3. **🔒 Zero Trust Communication**: All services communicate via VPC Lattice with IAM authentication
+4. **📊 Observability Flow**: Metrics collection from services to monitoring stack
 
-        IdentityCenter[IAM Identity Center<br/>SSO & Access Control]
-        ECR[ECR Repository<br/>Container Registry]
-    end
+### 💡 How to Use the Diagrams
 
-    %% Connections
-    VPCLattice --> BankingService
-    FargateProfile --> BankingService
-    IdentityCenter --> EKS
-    AWSConfig --> EventBridge
-    EventBridge --> SSMAutomation
-    SSMAutomation -.->|fixes violations| VPC
-    Endpoints --> ECR
+1. **Click the Canvas tab** above to view interactive diagrams
+2. **Hover over nodes** to see detailed tooltips and information
+3. **Follow the colored edges** to understand data flow:
+   - **Blue**: Infrastructure provisioning (Terraform)
+   - **Green**: CI/CD pipeline flow
+   - **Purple**: Zero trust communication
+   - **Red**: Self-healing governance
+   - **Yellow**: Monitoring & observability
 
-    style VPCLattice fill:#e1f5fe
-    style BankingService fill:#f3e5f5
-    style AWSConfig fill:#fff3e0
-    style IdentityCenter fill:#e8f5e8
-```
+### 📤 Exporting Architecture Diagrams
 
-### Development & CI/CD Layer
-```mermaid
-graph LR
-    subgraph "External Development Tools"
-        GitHub[GitHub Repository<br/>Source Code & GitOps]
-        Actions[GitHub Actions<br/>CI/CD Pipeline]
-        Terraform[Terraform<br/>Infrastructure as Code]
-        OPA[OPA/Conftest<br/>Policy Validation]
-    end
+The architecture diagrams are stored as interactive JSON files in `.infracodebase/`:
+- `imladris-zero-trust-platform.json` - Complete platform architecture
+- `imladris-simplified-overview.json` - Simplified 4-layer view
 
-    subgraph "AWS Services"
-        ECR2[ECR Repository<br/>Container Images]
-        ArgoCD2[ArgoCD<br/>GitOps Controller]
-        EKS2[EKS Fargate<br/>Application Runtime]
-    end
+**To share or present these diagrams:**
+1. **Screenshot**: Use the Canvas tab screenshot functionality
+2. **Export**: Diagrams can be exported to various formats through the Canvas interface
+3. **Embed**: Reference the JSON files for documentation or presentations
+4. **Print**: Use browser print functionality from the Canvas view
 
-    GitHub --> Actions
-    Actions --> ECR2
-    Actions --> ArgoCD2
-    ArgoCD2 --> EKS2
-    Terraform --> AWS
-    OPA --> Actions
-
-    style GitHub fill:#f0f8ff
-    style Actions fill:#e8f5e8
-    style Terraform fill:#e1f5fe
-    style OPA fill:#fff3e0
-```
-
-### Self-Healing Governance Loop
-```mermaid
-graph TD
-    UserChange[👨‍💻 Developer Makes Change] --> AWSConfig[🔍 AWS Config Detects Change]
-    AWSConfig --> ConfigRule{📋 Config Rule Evaluation<br/>restricted-ssh, no-public-access}
-    ConfigRule -->|❌ NON_COMPLIANT| EventBridge[⚡ EventBridge Triggers Event]
-    ConfigRule -->|✅ COMPLIANT| Monitor[🔄 Continue Monitoring]
-    EventBridge --> SSMAutomation[🔧 SSM Automation Executes]
-    SSMAutomation --> Remediation[🛠️ Automatic Remediation<br/>Remove public ingress rules]
-    Remediation --> UserChange
-    Monitor --> UserChange
-
-    style UserChange fill:#e8f5e8
-    style AWSConfig fill:#fff3e0
-    style EventBridge fill:#ffe8e8
-    style SSMAutomation fill:#e8e8ff
-    style Remediation fill:#f0f8ff
-```
-
-### Service Supply Chain
-```mermaid
-sequenceDiagram
-    participant Dev as 👨‍💻 Developer
-    participant GH as 📦 GitHub
-    participant CI as 🔄 GitHub Actions
-    participant ECR as 🐳 Amazon ECR
-    participant GitOps as 📋 GitOps Repo
-    participant ArgoCD as ⚙️ ArgoCD
-    participant K8s as ☸️ EKS Fargate
-
-    Dev->>GH: 1. Push code changes
-    GH->>CI: 2. Trigger pipeline
-    CI->>CI: 3. Security scan & policy validation
-    CI->>CI: 4. Build & test
-    CI->>ECR: 5. Push container image
-    CI->>GitOps: 6. Update Kubernetes manifests
-    GitOps->>ArgoCD: 7. Detect manifest changes
-    ArgoCD->>ArgoCD: 8. Validate & sync
-    ArgoCD->>K8s: 9. Deploy to Fargate
-    K8s-->>Dev: 10. ✅ Service running securely
-```
+**For technical documentation:**
+- The JSON files contain all node and edge definitions
+- Icons use standardized cloud provider icon sets
+- Color coding follows consistent patterns across all diagrams
 
 ## 📁 Repository Structure & Purpose
 
