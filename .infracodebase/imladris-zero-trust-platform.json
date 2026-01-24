@@ -1,176 +1,190 @@
 {
   "nodes": [
     {
-      "id": "dev-cicd-zone",
-      "label": "Development & CI/CD Zone",
-      "subtitle": "External Development Tools",
-      "icon": "/icons/onprem/vcs/github.png",
-      "type": "container",
-      "layout": "column"
-    },
-    {
-      "id": "github-repo",
-      "label": "GitHub Repository",
-      "subtitle": "Source Code & GitOps",
-      "icon": "/icons/onprem/vcs/github.png",
-      "parentNode": "dev-cicd-zone",
-      "order": 1
-    },
-    {
-      "id": "opa-conftest",
-      "label": "OPA/Conftest",
-      "subtitle": "Policy Validation",
-      "icon": "/icons/elastic/agent/agent.png",
-      "parentNode": "dev-cicd-zone",
-      "order": 2
-    },
-    {
-      "id": "github-actions",
-      "label": "GitHub Actions",
-      "subtitle": "CI/CD Pipeline",
-      "icon": "/icons/onprem/ci/github-actions.png",
-      "parentNode": "dev-cicd-zone",
-      "order": 3
-    },
-    {
-      "id": "terraform-iac",
-      "label": "Terraform",
-      "subtitle": "Infrastructure as Code",
-      "icon": "/icons/onprem/iac/terraform.png",
-      "parentNode": "dev-cicd-zone",
-      "order": 4
-    },
-    {
-      "id": "aws-cloud",
-      "label": "AWS Cloud - Investment Bank",
-      "subtitle": "Zero Trust Infrastructure",
+      "id": "aws-account",
+      "label": "AWS Account",
+      "subtitle": "Tier-1 Investment Bank",
       "icon": "/icons/aws/aws.png",
-      "type": "container",
-      "layout": "column",
-      "position": {
-        "relativeTo": "dev-cicd-zone",
-        "side": "right"
-      }
+      "type": "container"
     },
     {
-      "id": "identity-center",
-      "label": "IAM Identity Center",
-      "subtitle": "SSO & Access Control",
-      "icon": "/icons/aws/security/identity-and-access-management-iam.png",
-      "parentNode": "aws-cloud",
-      "order": 1
-    },
-    {
-      "id": "ecr",
-      "label": "ECR Repository",
-      "subtitle": "Container Registry",
-      "icon": "/icons/aws/compute/ec2-container-registry.png",
-      "parentNode": "aws-cloud",
-      "order": 2
-    },
-    {
-      "id": "governance-zone",
-      "label": "Governance & Compliance",
-      "subtitle": "Self-Healing Policy Engine",
-      "icon": "/icons/aws/management/config.png",
-      "type": "container",
-      "parentNode": "aws-cloud",
-      "layout": "row",
-      "order": 3
-    },
-    {
-      "id": "aws-config",
-      "label": "AWS Config",
-      "subtitle": "Compliance Monitor",
-      "icon": "/icons/aws/management/config.png",
-      "parentNode": "governance-zone",
-      "order": 1
-    },
-    {
-      "id": "eventbridge",
-      "label": "EventBridge",
-      "subtitle": "Event Automation",
-      "icon": "/icons/aws/integration/eventbridge.png",
-      "parentNode": "governance-zone",
-      "order": 2
-    },
-    {
-      "id": "ssm-automation",
-      "label": "Systems Manager",
-      "subtitle": "Auto-Remediation",
-      "icon": "/icons/aws/management/systems-manager.png",
-      "parentNode": "governance-zone",
-      "order": 3
-    },
-    {
-      "id": "network-zone",
-      "label": "VPC Network - Zero Trust",
+      "id": "vpc",
+      "label": "VPC",
       "subtitle": "imladris-prod-vpc (10.0.0.0/16)",
       "icon": "/icons/aws/network/vpc.png",
       "type": "container",
-      "parentNode": "aws-cloud",
-      "layout": "column",
-      "order": 4
+      "parentNode": "aws-account"
     },
     {
       "id": "vpc-lattice",
-      "label": "VPC Lattice",
-      "subtitle": "Service Mesh",
+      "label": "VPC Lattice Service Network",
+      "subtitle": "Zero Trust Service Mesh",
       "icon": "/icons/aws/network/vpc.png",
-      "parentNode": "network-zone",
-      "order": 1
+      "parentNode": "vpc"
+    },
+    {
+      "id": "private-subnet-1",
+      "label": "Private Subnet",
+      "subtitle": "AZ-1a (10.0.0.0/24)",
+      "icon": "/icons/aws/network/private-subnet.png",
+      "type": "container",
+      "parentNode": "vpc"
+    },
+    {
+      "id": "private-subnet-2",
+      "label": "Private Subnet",
+      "subtitle": "AZ-1b (10.0.1.0/24)",
+      "icon": "/icons/aws/network/private-subnet.png",
+      "type": "container",
+      "parentNode": "vpc"
+    },
+    {
+      "id": "private-subnet-3",
+      "label": "Private Subnet",
+      "subtitle": "AZ-1c (10.0.2.0/24)",
+      "icon": "/icons/aws/network/private-subnet.png",
+      "type": "container",
+      "parentNode": "vpc"
     },
     {
       "id": "vpc-endpoints",
       "label": "VPC Endpoints",
-      "subtitle": "Private AWS APIs",
+      "subtitle": "Private AWS API Access",
       "icon": "/icons/aws/network/endpoint.png",
-      "parentNode": "network-zone",
-      "order": 2
+      "parentNode": "vpc"
     },
     {
-      "id": "private-subnets",
-      "label": "Private Subnets",
-      "subtitle": "3 AZs - No Internet Access",
-      "icon": "/icons/aws/network/private-subnet.png",
-      "parentNode": "network-zone",
-      "order": 3
-    },
-    {
-      "id": "compute-zone",
-      "label": "EKS Fargate Cluster",
+      "id": "eks-cluster",
+      "label": "EKS Cluster",
       "subtitle": "imladris-prod-cluster",
       "icon": "/icons/aws/compute/elastic-kubernetes-service.png",
       "type": "container",
-      "parentNode": "aws-cloud",
-      "layout": "row",
-      "order": 5
+      "parentNode": "private-subnet-2"
+    },
+    {
+      "id": "fargate-profile",
+      "label": "Fargate Profile",
+      "subtitle": "Serverless Compute",
+      "icon": "/icons/aws/compute/fargate.png",
+      "parentNode": "eks-cluster"
+    },
+    {
+      "id": "banking-namespace",
+      "label": "banking-core Namespace",
+      "subtitle": "Core Banking Services",
+      "icon": "/icons/onprem/gitops/argocd.png",
+      "type": "container",
+      "parentNode": "eks-cluster"
+    },
+    {
+      "id": "argocd-namespace",
+      "label": "argocd Namespace",
+      "subtitle": "GitOps Controller",
+      "icon": "/icons/onprem/gitops/argocd.png",
+      "type": "container",
+      "parentNode": "eks-cluster"
+    },
+    {
+      "id": "banking-service",
+      "label": "Banking Core Service",
+      "subtitle": "Go Microservice",
+      "icon": "/icons/aws/compute/fargate.png",
+      "parentNode": "banking-namespace"
     },
     {
       "id": "argocd-server",
       "label": "ArgoCD Server",
       "subtitle": "GitOps Engine",
       "icon": "/icons/onprem/gitops/argocd.png",
-      "parentNode": "compute-zone",
-      "order": 1
+      "parentNode": "argocd-namespace"
     },
     {
-      "id": "banking-service",
-      "label": "Banking Services",
-      "subtitle": "Go Microservices",
-      "icon": "/icons/aws/compute/fargate.png",
-      "parentNode": "compute-zone",
-      "order": 2
+      "id": "governance-layer",
+      "label": "Governance & Compliance",
+      "subtitle": "Policy Enforcement",
+      "type": "container",
+      "parentNode": "aws-account"
     },
     {
-      "id": "observability-zone",
+      "id": "aws-config",
+      "label": "AWS Config",
+      "subtitle": "Compliance Monitoring",
+      "icon": "/icons/aws/management/config.png",
+      "parentNode": "governance-layer"
+    },
+    {
+      "id": "eventbridge",
+      "label": "EventBridge",
+      "subtitle": "Event-Driven Remediation",
+      "icon": "/icons/aws/integration/eventbridge.png",
+      "parentNode": "governance-layer"
+    },
+    {
+      "id": "ssm-automation",
+      "label": "Systems Manager",
+      "subtitle": "Auto-Remediation",
+      "icon": "/icons/aws/management/systems-manager.png",
+      "parentNode": "governance-layer"
+    },
+    {
+      "id": "identity-center",
+      "label": "IAM Identity Center",
+      "subtitle": "SSO & Access Control",
+      "icon": "/icons/aws/security/identity-and-access-management-iam.png",
+      "parentNode": "aws-account"
+    },
+    {
+      "id": "ecr",
+      "label": "ECR Repository",
+      "subtitle": "Container Registry",
+      "icon": "/icons/aws/compute/ec2-container-registry.png",
+      "parentNode": "aws-account"
+    },
+    {
+      "id": "external-systems",
+      "label": "Development & CI/CD",
+      "subtitle": "External Integration",
+      "type": "container",
+      "position": {
+        "relativeTo": "aws-account",
+        "side": "left"
+      }
+    },
+    {
+      "id": "github-repo",
+      "label": "GitHub Repository",
+      "subtitle": "Source Code & GitOps",
+      "icon": "/icons/onprem/vcs/github.png",
+      "parentNode": "external-systems"
+    },
+    {
+      "id": "github-actions",
+      "label": "GitHub Actions",
+      "subtitle": "CI/CD Pipeline",
+      "icon": "/icons/onprem/ci/github-actions.png",
+      "parentNode": "external-systems"
+    },
+    {
+      "id": "terraform-iac",
+      "label": "Terraform",
+      "subtitle": "Infrastructure as Code",
+      "icon": "/icons/onprem/iac/terraform.png",
+      "parentNode": "external-systems"
+    },
+    {
+      "id": "opa-conftest",
+      "label": "OPA/Conftest",
+      "subtitle": "Policy Validation",
+      "icon": "/icons/elastic/agent/agent.png",
+      "parentNode": "external-systems"
+    },
+    {
+      "id": "monitoring-stack",
       "label": "Observability Stack",
       "subtitle": "Monitoring & Alerting",
-      "icon": "/icons/onprem/monitoring/prometheus.png",
       "type": "container",
-      "layout": "column",
       "position": {
-        "relativeTo": "aws-cloud",
+        "relativeTo": "aws-account",
         "side": "right"
       }
     },
@@ -179,93 +193,58 @@
       "label": "Prometheus",
       "subtitle": "Metrics Collection",
       "icon": "/icons/onprem/monitoring/prometheus.png",
-      "parentNode": "observability-zone",
-      "order": 1
+      "parentNode": "monitoring-stack"
     },
     {
       "id": "grafana",
       "label": "Grafana",
       "subtitle": "Dashboards & Alerts",
       "icon": "/icons/onprem/monitoring/grafana.png",
-      "parentNode": "observability-zone",
-      "order": 2
+      "parentNode": "monitoring-stack"
     },
     {
       "id": "cloudwatch",
       "label": "CloudWatch",
-      "subtitle": "AWS Native Logs",
+      "subtitle": "AWS Native Monitoring",
       "icon": "/icons/aws/management/cloudwatch.png",
-      "parentNode": "observability-zone",
-      "order": 3
+      "parentNode": "monitoring-stack"
     }
   ],
   "edges": [
     {
-      "id": "dev-flow-1",
-      "source": "github-repo",
-      "target": "opa-conftest",
-      "label": "policy check",
-      "color": "green",
-      "style": "solid"
-    },
-    {
-      "id": "dev-flow-2",
-      "source": "opa-conftest",
-      "target": "github-actions",
-      "label": "validation ok",
-      "color": "green",
-      "style": "solid"
-    },
-    {
-      "id": "dev-flow-3",
-      "source": "github-actions",
-      "target": "ecr",
-      "label": "push image",
-      "color": "green",
-      "style": "solid"
-    },
-    {
-      "id": "dev-flow-4",
-      "source": "github-actions",
-      "target": "argocd-server",
-      "label": "update GitOps",
-      "color": "green",
-      "style": "solid"
-    },
-    {
-      "id": "iac-flow",
+      "id": "terraform-to-aws",
       "source": "terraform-iac",
-      "target": "network-zone",
+      "target": "aws-account",
       "label": "provisions",
       "color": "blue",
       "style": "solid"
     },
     {
-      "id": "identity-flow",
-      "source": "identity-center",
-      "target": "compute-zone",
-      "label": "SSO auth",
-      "color": "purple",
-      "style": "dotted"
-    },
-    {
-      "id": "registry-flow",
-      "source": "ecr",
-      "target": "banking-service",
-      "label": "pull images",
+      "id": "github-to-actions",
+      "source": "github-repo",
+      "target": "github-actions",
+      "label": "triggers",
       "color": "green",
       "style": "dashed"
     },
     {
-      "id": "vpc-endpoints-flow",
-      "source": "vpc-endpoints",
+      "id": "actions-to-ecr",
+      "source": "github-actions",
       "target": "ecr",
-      "label": "private API",
-      "color": "purple",
-      "style": "dotted"
+      "label": "pushes images",
+      "color": "green",
+      "style": "dashed"
     },
     {
-      "id": "deployment-flow",
+      "id": "actions-to-gitops",
+      "source": "github-actions",
+      "target": "argocd-server",
+      "label": "updates manifests",
+      "color": "green",
+      "style": "dashed"
+    },
+    {
+      "id": "argocd-to-banking",
       "source": "argocd-server",
       "target": "banking-service",
       "label": "deploys",
@@ -273,7 +252,7 @@
       "style": "dotted"
     },
     {
-      "id": "service-mesh-flow",
+      "id": "vpc-lattice-to-banking",
       "source": "vpc-lattice",
       "target": "banking-service",
       "label": "zero trust mesh",
@@ -281,15 +260,15 @@
       "style": "dotted"
     },
     {
-      "id": "compute-network-flow",
-      "source": "private-subnets",
-      "target": "banking-service",
-      "label": "runs on",
+      "id": "identity-to-eks",
+      "source": "identity-center",
+      "target": "eks-cluster",
+      "label": "SSO auth",
       "color": "purple",
       "style": "dotted"
     },
     {
-      "id": "governance-flow-1",
+      "id": "config-to-eventbridge",
       "source": "aws-config",
       "target": "eventbridge",
       "label": "violations",
@@ -297,7 +276,7 @@
       "style": "solid"
     },
     {
-      "id": "governance-flow-2",
+      "id": "eventbridge-to-ssm",
       "source": "eventbridge",
       "target": "ssm-automation",
       "label": "triggers",
@@ -305,15 +284,31 @@
       "style": "solid"
     },
     {
-      "id": "governance-flow-3",
+      "id": "ssm-back-to-aws",
       "source": "ssm-automation",
-      "target": "network-zone",
-      "label": "auto-fix",
+      "target": "vpc",
+      "label": "auto-fixes",
       "color": "red",
       "style": "solid"
     },
     {
-      "id": "monitoring-flow-1",
+      "id": "vpc-endpoints-to-aws",
+      "source": "vpc-endpoints",
+      "target": "ecr",
+      "label": "private API",
+      "color": "purple",
+      "style": "dotted"
+    },
+    {
+      "id": "fargate-to-banking",
+      "source": "fargate-profile",
+      "target": "banking-service",
+      "label": "serverless runtime",
+      "color": "purple",
+      "style": "dotted"
+    },
+    {
+      "id": "banking-to-prometheus",
       "source": "banking-service",
       "target": "prometheus",
       "label": "metrics",
@@ -321,19 +316,27 @@
       "style": "dashed"
     },
     {
-      "id": "monitoring-flow-2",
-      "source": "banking-service",
+      "id": "prometheus-to-grafana",
+      "source": "prometheus",
+      "target": "grafana",
+      "label": "dashboards",
+      "color": "yellow",
+      "style": "dashed"
+    },
+    {
+      "id": "aws-to-cloudwatch",
+      "source": "eks-cluster",
       "target": "cloudwatch",
       "label": "logs",
       "color": "yellow",
       "style": "dashed"
     },
     {
-      "id": "monitoring-flow-3",
-      "source": "prometheus",
-      "target": "grafana",
-      "label": "dashboards",
-      "color": "yellow",
+      "id": "policy-validation",
+      "source": "opa-conftest",
+      "target": "github-actions",
+      "label": "validates",
+      "color": "green",
       "style": "dashed"
     }
   ],

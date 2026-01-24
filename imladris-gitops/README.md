@@ -1,60 +1,116 @@
-# Imladris GitOps
+# Imladris GitOps - The State
 
-ArgoCD-based GitOps platform for managing Kubernetes workload state.
+ArgoCD-based GitOps platform for the Zero Trust Investment Banking environment.
 
 ## Overview
 
-Manages desired state of all Kubernetes workloads using ArgoCD with:
-- App-of-apps pattern for centralized application management
-- Network policies enforcing default-deny with explicit allow rules
-- VPC Lattice integration for zero-trust service communication
-- Policy validation through Conftest/OPA before deployment
+Imladris GitOps manages the desired state of all Kubernetes workloads using ArgoCD. It implements:
 
-## Architecture
+- **App-of-Apps Pattern**: Centralized application management
+- **Zero Trust Networking**: Network policies and VPC Lattice integration
+- **Policy Validation**: Built-in Conftest/OPA validation
+- **Compliance Monitoring**: Continuous drift detection and remediation
 
-ArgoCD monitors Git repository and keeps cluster state synchronized:
+## Cluster State Management
 
-1. Developer commits manifest changes to Git
-2. GitOps webhook notifies ArgoCD
-3. ArgoCD detects drift from desired state
-4. Policies are validated (Conftest/OPA)
-5. Changes are automatically deployed to cluster
-6. Continuous monitoring detects and remediates drift
+```mermaid
+graph TD
+    %% ArgoCD Management Layer
+    ArgoCD[ArgoCD Server] --> RootApp[Root Application]
+    RootApp --> AppProjects[App Projects]
 
-## Structure
+    %% Application Layer
+    AppProjects --> BankingCore[Banking Core Apps]
+    AppProjects --> Platform[Platform Apps]
+    AppProjects --> Monitoring[Monitoring Apps]
 
+    %% Banking Core Namespace
+    subgraph "Namespace: banking-core"
+        BankingCore --> Deployment[Deployment: banking-core-service]
+        BankingCore --> Service[Service: banking-core-service]
+        BankingCore --> LatticeService[VPC Lattice Service]
+        BankingCore --> NetworkPolicy[Network Policy: default-deny-all]
+    end
+
+    %% Platform Namespace
+    subgraph "Namespace: argocd"
+        Platform --> ArgoCDServer[ArgoCD Server]
+        Platform --> RepoServer[Repo Server]
+        Platform --> Controller[Application Controller]
+    end
+
+    %% Monitoring Namespace
+    subgraph "Namespace: monitoring"
+        Monitoring --> Prometheus[Prometheus]
+        Monitoring --> Grafana[Grafana]
+        Monitoring --> AlertManager[Alert Manager]
+    end
+
+    %% External Integrations
+    GitRepo[Git Repository] --> ArgoCD
+    VPCLattice[VPC Lattice Network] --> LatticeService
+    IAMIdentityCenter[IAM Identity Center] --> ArgoCD
+
+    %% Styling
+    style ArgoCD fill:#e1f5fe
+    style BankingCore fill:#f3e5f5
+    style Platform fill:#fff3e0
+    style Monitoring fill:#e8f5e8
+    style VPCLattice fill:#fce4ec
 ```
-imladris-gitops/
-├── bootstrap/
-│   └── root.yaml              # Root App-of-Apps application
-├── tenants/
-│   └── banking-core/          # Core banking services namespace
-│       ├── namespace.yaml     # Namespace with network policies
-│       ├── deployment.yaml    # Service deployment
-│       ├── service.yaml       # Kubernetes service
-│       └── vpc-lattice-service.yaml  # VPC Lattice integration
-└── infrastructure/
-    └── argocd/                # ArgoCD configuration
-        ├── argocd-server.yaml
-        └── argocd-repo-server.yaml
-```
 
-## Components
+## Architecture Components
 
 ### Bootstrap Layer
-- Root Application: App-of-apps managing all applications
-- App Projects: RBAC boundaries and security isolation
-- Repository Configuration: Git credentials and access
+- **Root Application**: App-of-apps that manages all other applications
+- **App Projects**: RBAC and security boundaries for different teams
+- **Repository Configuration**: Git repository access and credentials
 
 ### Tenant Layer
-- banking-core: Core banking services namespace
-- platform: Infrastructure and tooling namespace
-- monitoring: Observability and alerting namespace
+- **banking-core**: Core banking services namespace
+- **platform**: Infrastructure and tooling namespace
+- **monitoring**: Observability and alerting namespace
 
 ### Security Layer
-- Network Policies: Default-deny with explicit allow rules
-- VPC Lattice Integration: Service mesh for zero-trust communication
-- RBAC: Fine-grained access control via IAM Identity Center
+- **Network Policies**: Default-deny with explicit allow rules
+- **VPC Lattice Integration**: Service mesh for zero-trust communication
+- **RBAC**: Fine-grained access control via IAM Identity Center
+
+## App-of-Apps Pattern
+
+The root application (`bootstrap/root.yaml`) manages all tenant applications:
+
+1. **Discovery**: Automatically discovers applications in `tenants/` directory
+2. **Deployment**: Creates Application resources for each tenant
+3. **Synchronization**: Maintains desired state across all applications
+4. **Health Monitoring**: Tracks health of all managed applications
+
+## GitOps Workflow
+
+```mermaid
+sequenceDiagram
+    participant Developer
+    participant GitRepo as Git Repository
+    participant ArgoCD
+    participant K8s as Kubernetes Cluster
+    participant VPCLattice as VPC Lattice
+
+    Developer->>GitRepo: 1. Push manifest changes
+    GitRepo->>ArgoCD: 2. Webhook notification
+    ArgoCD->>ArgoCD: 3. Detect drift from desired state
+    ArgoCD->>ArgoCD: 4. Validate with Conftest/OPA
+
+    alt Validation Passes
+        ArgoCD->>K8s: 5a. Apply changes to cluster
+        K8s->>VPCLattice: 6a. Register/update services
+        ArgoCD->>Developer: 7a. ✅ Sync successful
+    else Validation Fails
+        ArgoCD->>Developer: 5b. ❌ Sync failed - policy violation
+    end
+
+    Note over ArgoCD,K8s: Continuous monitoring and auto-healing
+    K8s-->>ArgoCD: Health checks and status updates
+```
 
 ## Tenant Onboarding
 
@@ -108,85 +164,85 @@ metadata:
 ## Security Policies
 
 ### Network Policies
-- Default deny-all policy for all namespaces
-- Explicit allow rules for required communication
-- VPC Lattice traffic automatically allowed
-- ArgoCD management traffic permitted
+- **Default Deny**: All namespaces start with deny-all policies
+- **Explicit Allow**: Only required communication paths are opened
+- **VPC Lattice**: Service mesh traffic is automatically allowed
+- **ArgoCD Access**: Management traffic from ArgoCD namespace
 
-### Resource Policies
-- All pods must run as non-root
-- Memory and CPU limits required
-- Proper labeling for service discovery
-- Approved container registries only
+### Resource Policies (Conftest/OPA)
+- **Security Context**: All pods must run as non-root
+- **Resource Limits**: Memory and CPU limits required
+- **Network Labels**: Proper labeling for service discovery
+- **Image Security**: Only approved container registries
 
 ### RBAC Integration
-- IAM Identity Center SSO integration
-- Project-based access controls
-- Platform admin for full cluster access
-- Read-only access for auditors
+- **IAM Identity Center**: SSO integration with AWS
+- **Project-based Access**: Developers can only access their projects
+- **Platform Admin**: Full cluster access for platform team
+- **Read-only**: View-only access for auditors and management
+
+## Monitoring and Observability
+
+### Application Health
+- **Sync Status**: ArgoCD tracks deployment status
+- **Resource Health**: Kubernetes resource health checks
+- **Policy Compliance**: Continuous policy validation
+- **Drift Detection**: Automatic detection of configuration drift
+
+### Service Mesh Metrics
+- **VPC Lattice**: Service-to-service communication metrics
+- **Network Policies**: Traffic flow monitoring
+- **Security Events**: Policy violation alerts
+- **Performance**: Latency and throughput metrics
 
 ## Usage
 
 ### Deploy New Application
 
-1. Create manifests in `tenants/{namespace}/`
-2. Commit and push to Git repository
-3. ArgoCD automatically detects and deploys
-4. Monitor status in ArgoCD UI
+1. **Create manifests** in `tenants/{namespace}/`
+2. **Commit and push** to Git repository
+3. **ArgoCD automatically detects** and deploys
+4. **Monitor deployment** in ArgoCD UI
 
 ### Update Existing Application
 
-1. Modify manifests in Git repository
-2. Push changes to trigger sync
-3. ArgoCD validates with policies
-4. Automatic rollout if validation passes
+1. **Modify manifests** in Git repository
+2. **Push changes** to trigger sync
+3. **ArgoCD validates** with policies
+4. **Automatic rollout** if validation passes
 
 ### Rollback Application
 
-Via ArgoCD CLI:
 ```bash
+# Via ArgoCD CLI
 argocd app rollback {app-name} {revision-id}
-```
 
-Via ArgoCD UI:
-- Navigate to application → History
-- Select revision → Rollback
+# Via ArgoCD UI
+# Navigate to application → History → Select revision → Rollback
+```
 
 ### Emergency Procedures
 
-Suspend automatic sync (break glass):
 ```bash
+# Suspend automatic sync (break glass)
 argocd app patch {app-name} --patch '{"spec":{"syncPolicy":null}}'
-```
 
-Manual sync with policy override (admin only):
-```bash
+# Manual sync with policy override (admin only)
 argocd app sync {app-name} --force --replace
-```
 
-Re-enable automatic sync:
-```bash
+# Re-enable automatic sync
 argocd app patch {app-name} --patch '{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}'
 ```
 
-## Monitoring
+## Integration Points
 
-### Application Health
-- ArgoCD deployment status
-- Kubernetes resource health
-- Policy compliance validation
-- Configuration drift detection
+- **[imladris-platform](../imladris-platform)**: Infrastructure foundation
+- **[imladris-governance](../imladris-governance)**: Policy validation
+- **[imladris-service-template](../imladris-service-template)**: Application development
+- **VPC Lattice**: Service mesh communication
+- **AWS IAM Identity Center**: Authentication and authorization
 
-### Service Mesh Metrics
-- VPC Lattice communication metrics
-- Network policy traffic flow
-- Security event alerting
-- Performance latency tracking
+---
 
-## Integration
-
-Works with:
-- [imladris-platform](../imladris-platform): EKS cluster and VPC Lattice
-- [imladris-governance](../imladris-governance): Policy validation
-- [imladris-service-template](../imladris-service-template): Application development
-- AWS IAM Identity Center: Authentication and authorization
+**GitOps: The Single Source of Truth**
+*Git is truth. Kubernetes is state. ArgoCD is the reconciler.*

@@ -1,65 +1,93 @@
-# Imladris Governance
+# Imladris Governance - The Law
 
-Policy-as-Code definitions enforcing security and compliance across the platform.
+Policy-as-Code definitions for the Zero Trust Investment Banking Platform.
 
 ## Overview
 
-Uses Open Policy Agent (OPA) and Conftest to validate infrastructure against security policies:
+Imladris Governance enforces security and compliance policies through Open Policy Agent (OPA) and Conftest. These policies ensure:
 
-- Prevents public ingress from 0.0.0.0/0 on all ports
-- Requires VPC Lattice for all service communication
-- Enforces Fargate-only compute (prohibits EC2)
-- Mandates encryption for all communications
+- **Zero Public Access**: No security groups allow ingress from 0.0.0.0/0
+- **VPC Lattice Only**: All service communication via VPC Lattice
+- **Fargate Enforcement**: No EC2 instances, only Fargate
+- **Encryption Standards**: All communication encrypted in transit
+
+## Policy Enforcement Flow
+
+```mermaid
+sequenceDiagram
+    participant Developer
+    participant TerraformPlan as Terraform Plan
+    participant OPAAgent as OPA Agent
+    participant Decision as Allow/Deny Decision
+
+    Developer->>TerraformPlan: terraform plan -out=tfplan
+    TerraformPlan->>TerraformPlan: terraform show -json tfplan > tfplan.json
+    TerraformPlan->>OPAAgent: conftest verify tfplan.json
+
+    OPAAgent->>OPAAgent: Evaluate deny-public-ingress.rego
+    OPAAgent->>OPAAgent: Evaluate require-vpc-lattice.rego
+    OPAAgent->>OPAAgent: Evaluate enforce-fargate.rego
+
+    alt Policy Violations Found
+        OPAAgent->>Decision: ❌ DENY with violation details
+        Decision->>Developer: ❌ Plan rejected - fix violations
+    else No Violations
+        OPAAgent->>Decision: ✅ ALLOW - compliant with policies
+        Decision->>Developer: ✅ Plan approved - safe to apply
+    end
+
+    Note over Developer,Decision: Zero Trust: Every change must pass policy validation
+```
 
 ## Policies
 
-### 1. Deny Public Ingress (deny-public-ingress.rego)
+### 1. Deny Public Ingress (`deny-public-ingress.rego`)
 
-Blocks any security group from allowing public access:
+Prevents any security group from allowing public access:
 
-- SSH (port 22) from 0.0.0.0/0
-- HTTP (port 80) from 0.0.0.0/0
-- HTTPS (port 443) except for VPC Lattice services
-- RDP (port 3389) from 0.0.0.0/0
-- All ports (0-65535) from 0.0.0.0/0
+- **SSH (22)**: Blocked from 0.0.0.0/0
+- **HTTP (80)**: Blocked from 0.0.0.0/0
+- **HTTPS (443)**: Blocked except for VPC Lattice services
+- **RDP (3389)**: Blocked from 0.0.0.0/0
+- **All Ports (0-65535)**: Blocked from 0.0.0.0/0
 
-### 2. Require VPC Lattice (require-vpc-lattice.rego)
+### 2. Require VPC Lattice (`require-vpc-lattice.rego`)
 
-Enforces service mesh usage:
+Enforces VPC Lattice for service communication:
 
-- All VPC Lattice services must be in a service network
-- Services must use AWS_IAM authentication
-- Listeners must use HTTPS for encryption
-- Discourages public load balancers
+- **Service Network Association**: All VPC Lattice services must be in a service network
+- **IAM Authentication**: All services must use `AWS_IAM` auth
+- **HTTPS Only**: All listeners must use HTTPS for encryption
+- **Internal Load Balancers**: Warns on public ALBs, suggests VPC Lattice
 
-### 3. Enforce Fargate (enforce-fargate.rego)
+### 3. Enforce Fargate (`enforce-fargate.rego`)
 
-Prevents non-compliant compute resources:
+Ensures immutable, serverless compute:
 
-- Blocks aws_instance resources (no EC2)
-- Blocks aws_eks_node_group resources
-- Blocks aws_autoscaling_group resources
-- Requires Fargate profiles in private subnets
+- **No EC2 Instances**: Blocks `aws_instance` resources
+- **No EKS Node Groups**: Blocks `aws_eks_node_group` resources
+- **No Auto Scaling Groups**: Blocks `aws_autoscaling_group` resources
+- **Private Fargate Only**: Fargate profiles must use private subnets
 
-## Installation
+## Usage
+
+### 1. Install Tools
 
 ```bash
 # Install Conftest
 curl -L https://github.com/open-policy-agent/conftest/releases/latest/download/conftest_linux_x86_64.tar.gz | tar xz
 sudo mv conftest /usr/local/bin
 
-# Optional: Install OPA for policy testing
+# Install OPA (optional, for testing)
 curl -L https://github.com/open-policy-agent/opa/releases/latest/download/opa_linux_amd64 -o opa
 chmod +x opa
 sudo mv opa /usr/local/bin
 ```
 
-## Usage
-
-### Validate Terraform Plans
+### 2. Validate Terraform Plans
 
 ```bash
-# Generate plan
+# In your Terraform directory
 terraform plan -out=tfplan
 terraform show -json tfplan > tfplan.json
 
@@ -67,32 +95,30 @@ terraform show -json tfplan > tfplan.json
 conftest verify --policy ./policies tfplan.json
 ```
 
-### CI/CD Integration
-
-Add to your pipeline:
+### 3. CI/CD Integration
 
 ```bash
-# Plan and validate
+# In your pipeline
 terraform plan -out=tfplan -detailed-exitcode
 terraform show -json tfplan > tfplan.json
 
-# Check policies - fail on violations
+# Policy check - fail on violations
 conftest verify --policy ./imladris-governance/policies tfplan.json
 if [ $? -ne 0 ]; then
-  echo "Policy violations found"
+  echo "❌ Policy violations found - plan rejected"
   exit 1
 fi
 
-# Safe to apply
+echo "✅ Plan compliant - safe to apply"
 terraform apply tfplan
 ```
 
 ## Policy Development
 
-### Test Policies
+### Testing Policies
 
 ```bash
-# Test policy rules
+# Test individual policy
 opa test policies/terraform/
 
 # Test with sample Terraform plan
@@ -123,16 +149,16 @@ warn contains msg if {
 ## Compliance Matrix
 
 | Control | Policy | Description |
-|---------|--------|-------------|
-| Network Security | deny-public-ingress | No public inbound access |
-| Service Mesh | require-vpc-lattice | All services use Lattice |
-| Compute Security | enforce-fargate | Fargate only, no EC2 |
-| Encryption | require-vpc-lattice | HTTPS mandatory |
-| Access Control | require-vpc-lattice | IAM authentication required |
+|---------|---------|-------------|
+| **Network Security** | deny-public-ingress | No public inbound access |
+| **Service Mesh** | require-vpc-lattice | All service communication via Lattice |
+| **Compute Security** | enforce-fargate | No persistent compute, Fargate only |
+| **Encryption** | require-vpc-lattice | HTTPS mandatory for all services |
+| **Access Control** | require-vpc-lattice | IAM authentication required |
 
 ## Exceptions
 
-Rare exceptions can be configured in `conftest.yaml`:
+Rare exceptions can be configured in `conftest.yaml` under the `exceptions` section. Use sparingly and document thoroughly:
 
 ```yaml
 exceptions:
@@ -143,13 +169,15 @@ exceptions:
       - "contains(message, 'health check')"
 ```
 
-Document all exceptions thoroughly.
-
 ## Integration
 
-These policies validate:
+These policies integrate with:
+- **CI/CD Pipelines**: Automated plan validation
+- **[imladris-platform](../imladris-platform)**: Infrastructure enforcement
+- **GitOps**: Policy validation before merge
+- **Developer Workflow**: Local validation before commit
 
-- Terraform plans in CI/CD pipelines
-- Infrastructure changes before deployment
-- Kubernetes manifests via OPA Gatekeeper
-- Container images at build time
+---
+
+**The Law of Zero Trust**
+*Every change is validated. Every resource is compliant. Every violation is blocked.*

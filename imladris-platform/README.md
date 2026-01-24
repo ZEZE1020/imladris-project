@@ -1,138 +1,142 @@
-# Imladris Platform
+# Imladris Platform - The Foundation
 
-Infrastructure as Code for zero trust AWS environment using Terraform.
+The Zero Trust Infrastructure Platform for high-compliance fintech environments.
 
 ## Overview
 
-Provides complete AWS infrastructure with:
-- Private VPC (10.0.0.0/16) with no internet gateway
-- VPC Lattice service mesh for zero-trust communication
-- EKS Fargate cluster for containerized workloads
-- Self-healing governance through AWS Config, EventBridge, and SSM
-- IAM Identity Center for centralized access control
+Imladris Platform provides the foundational infrastructure for a completely private, self-healing, and compliant AWS environment:
+
+- **Zero Trust Networking**: No VPNs, no public endpoints. All communication via VPC Lattice
+- **Immutable Compute**: EKS Fargate only - no EC2 nodes to manage
+- **Self-Healing Governance**: Automatic remediation of security violations
+- **Identity-First**: AWS IAM Identity Center integration
 
 ## Architecture
 
-The platform consists of three main Terraform modules:
+```mermaid
+graph TD
+    %% User Actions
+    Developer[Developer] --> TerraformPlan[Terraform Plan]
 
-### Networking Module
-- Private-only VPC with no public routes
-- VPC Lattice service network for service-to-service communication
-- VPC endpoints for private access to AWS services (S3, ECR, etc.)
-- Private subnets across multiple availability zones
+    %% Self-Healing Loop
+    UserChange[User Change] --> AWSConfig[AWS Config]
+    AWSConfig --> ConfigRule[Config Rule: restricted-ssh]
+    ConfigRule --> EventBridge[EventBridge Rule]
+    EventBridge --> SSM[SSM Automation]
+    SSM --> Remediation[Automatic Remediation]
+    Remediation --> UserChange
 
-### Governance Module
-- AWS Config rules for continuous compliance monitoring
-- EventBridge rules to trigger automated remediation
-- SSM Automation documents for self-healing (e.g., SSH restriction remediation)
-- CloudWatch logs for audit trails
+    %% Infrastructure Components
+    subgraph "VPC Lattice Zero Trust Network"
+        VPCLattice[VPC Lattice Service Network]
+        PrivateSubnets[Private Subnets Only]
+        VPCEndpoints[VPC Endpoints]
+    end
 
-### Compute Module
-- EKS Fargate cluster with no EC2 node groups
-- KMS encryption for secrets at rest
-- IAM Identity Center integration for RBAC
-- VPC Lattice service integration
+    subgraph "EKS Fargate Cluster"
+        EKSCluster[EKS Control Plane]
+        FargateProfile[Fargate Profile]
+        KMSEncryption[KMS Encryption]
+    end
 
-## Self-Healing Infrastructure
+    subgraph "Governance & Compliance"
+        AWSConfig
+        ConfigRule
+        EventBridge
+        SSM
+    end
 
-The platform implements automatic remediation:
+    subgraph "Identity & Access"
+        IdentityCenter[IAM Identity Center]
+        PermissionSets[Permission Sets]
+    end
 
-1. **Detection**: AWS Config evaluates resources against rules
-2. **Trigger**: Non-compliance triggers EventBridge rule
-3. **Remediation**: SSM Automation executes corrective action
-4. **Verification**: Config re-evaluates compliance status
+    %% Connections
+    VPCLattice --> EKSCluster
+    PrivateSubnets --> FargateProfile
+    IdentityCenter --> PermissionSets
+    PermissionSets --> EKSCluster
 
-Example: If a security group allows SSH from 0.0.0.0/0, it is automatically reverted.
-
-## Configuration
-
-### Prerequisites
-```bash
-terraform >= 1.0
-aws-cli >= 2.31
-kubectl >= 1.28
+    style VPCLattice fill:#e1f5fe
+    style EKSCluster fill:#f3e5f5
+    style AWSConfig fill:#fff3e0
+    style IdentityCenter fill:#e8f5e8
 ```
 
-### Variables
+## Self-Healing Infrastructure Flow
 
-Copy `terraform.tfvars.example` to `terraform.tfvars`:
+The platform implements a continuous compliance loop:
 
-```bash
-cp terraform.tfvars.example terraform.tfvars
-```
-
-Key variables:
-- `aws_region`: AWS region (e.g., us-east-1)
-- `cluster_name`: EKS cluster name
-- `environment`: Deployment environment (dev, staging, prod)
-- `vpc_cidr`: VPC CIDR block (default: 10.0.0.0/16)
-
-## Deployment
-
-```bash
-# Initialize Terraform
-terraform init
-
-# Review planned changes
-terraform plan
-
-# Apply configuration
-terraform apply
-```
-
-### Post-Deployment
-
-```bash
-# Configure kubectl
-aws eks update-kubeconfig --region <region> --name <cluster-name>
-
-# Verify cluster access
-kubectl get nodes
-
-# Check infrastructure
-terraform output
-```
-
-## Compliance Features
-
-- No public endpoints or internet gateways
-- KMS encryption for all secrets
-- Comprehensive CloudWatch logging
-- Automatic security violation remediation
-- IAM Identity Center SSO integration
-- VPC Lattice for encrypted service communication
-
-## Zero Trust Principles
-
-1. All services communicate via VPC Lattice with IAM authentication
-2. No VPN access; only IAM Identity Center
-3. Immutable Fargate compute with no persistent state
-4. Continuous compliance monitoring and auto-remediation
-5. Minimal permissions via least privilege access
+1. **Detection**: AWS Config monitors all resource changes
+2. **Evaluation**: Config Rules evaluate compliance (e.g., no SSH from 0.0.0.0/0)
+3. **Alert**: EventBridge captures non-compliant events
+4. **Remediation**: SSM Automation automatically fixes violations
+5. **Verification**: Config re-evaluates and confirms compliance
 
 ## Modules
 
-```
-modules/
-├── networking/
-│   ├── main.tf
-│   ├── variables.tf
-│   └── outputs.tf
-├── governance/
-│   ├── main.tf
-│   ├── variables.tf
-│   ├── outputs.tf
-│   └── automation/
-│       └── remediate-ssh.yaml
-└── compute/
-    ├── main.tf
-    ├── variables.tf
-    └── outputs.tf
-```
+### Networking Module
+- **VPC**: Private-only network (10.0.0.0/16)
+- **VPC Lattice**: Service mesh for zero-trust communication
+- **VPC Endpoints**: Private access to AWS services
+- **No Internet Gateway**: Zero external access
+
+### Governance Module
+- **AWS Config**: Continuous compliance monitoring
+- **EventBridge**: Event-driven remediation triggers
+- **SSM Automation**: Automatic violation fixes
+- **Config Rules**: SSH restriction, public access prevention
+
+### Compute Module
+- **EKS Fargate**: Serverless Kubernetes containers
+- **KMS Encryption**: Envelope encryption for secrets
+- **IAM Identity Center**: Centralized access management
+- **VPC Lattice Integration**: Service registration
+
+## Usage
+
+1. **Configure Variables**:
+   ```bash
+   cp terraform.tfvars.example terraform.tfvars
+   # Edit terraform.tfvars with your values
+   ```
+
+2. **Deploy Infrastructure**:
+   ```bash
+   terraform init
+   terraform plan
+   terraform apply
+   ```
+
+3. **Verify Self-Healing**:
+   ```bash
+   # Create a non-compliant security group (SSH from 0.0.0.0/0)
+   # Watch as AWS Config detects and SSM automatically remediates
+   ```
+
+## Compliance Features
+
+- **No Public Access**: All resources are private-only
+- **Encryption**: KMS encryption for EKS secrets
+- **Audit Logging**: Comprehensive CloudWatch logs
+- **Access Control**: IAM Identity Center with least privilege
+- **Automated Remediation**: Self-healing security violations
+
+## Zero Trust Principles
+
+1. **Never Trust, Always Verify**: All service communication authenticated
+2. **Least Privilege**: Minimal required access only
+3. **Assume Breach**: Network segmentation via VPC Lattice
+4. **Verify Explicitly**: Continuous compliance monitoring
 
 ## Next Steps
 
-1. Deploy infrastructure with Terraform
-2. Configure [imladris-governance](../imladris-governance) policies
-3. Set up [imladris-gitops](../imladris-gitops) for application deployment
-4. Create services using [imladris-service-template](../imladris-service-template)
+After deploying the platform:
+1. Deploy [imladris-governance](../imladris-governance) policies
+2. Configure [imladris-gitops](../imladris-gitops) for application deployment
+3. Use [imladris-service-template](../imladris-service-template) for new services
+
+---
+
+**Built for Tier-1 Investment Banking**
+*Security First. Compliance Always. Zero Trust Everything.*
