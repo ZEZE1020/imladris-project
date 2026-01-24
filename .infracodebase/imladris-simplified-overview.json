@@ -1,0 +1,201 @@
+{
+  "nodes": [
+    {
+      "id": "layer-1",
+      "label": "Layer 1: Development & CI/CD",
+      "subtitle": "External Tools & Automation",
+      "icon": "/icons/onprem/vcs/github.png",
+      "type": "container",
+      "layout": "row"
+    },
+    {
+      "id": "layer-2",
+      "label": "Layer 2: Policy & Governance",
+      "subtitle": "Security Enforcement",
+      "icon": "/icons/elastic/agent/agent.png",
+      "type": "container",
+      "layout": "row",
+      "position": {
+        "relativeTo": "layer-1",
+        "side": "below"
+      }
+    },
+    {
+      "id": "layer-3",
+      "label": "Layer 3: Infrastructure",
+      "subtitle": "AWS Foundation",
+      "icon": "/icons/aws/aws.png",
+      "type": "container",
+      "layout": "row",
+      "position": {
+        "relativeTo": "layer-2",
+        "side": "below"
+      }
+    },
+    {
+      "id": "layer-4",
+      "label": "Layer 4: Applications",
+      "subtitle": "Running Services",
+      "icon": "/icons/aws/compute/fargate.png",
+      "type": "container",
+      "layout": "row",
+      "position": {
+        "relativeTo": "layer-3",
+        "side": "below"
+      }
+    },
+    {
+      "id": "github-simple",
+      "label": "GitHub Repository",
+      "subtitle": "Source Code",
+      "icon": "/icons/onprem/vcs/github.png",
+      "parentNode": "layer-1",
+      "order": 1
+    },
+    {
+      "id": "actions-simple",
+      "label": "GitHub Actions",
+      "subtitle": "CI/CD Pipeline",
+      "icon": "/icons/onprem/ci/github-actions.png",
+      "parentNode": "layer-1",
+      "order": 2
+    },
+    {
+      "id": "terraform-simple",
+      "label": "Terraform",
+      "subtitle": "Infrastructure as Code",
+      "icon": "/icons/onprem/iac/terraform.png",
+      "parentNode": "layer-1",
+      "order": 3
+    },
+    {
+      "id": "opa-simple",
+      "label": "OPA Policies",
+      "subtitle": "Security Rules",
+      "icon": "/icons/elastic/agent/agent.png",
+      "parentNode": "layer-2",
+      "order": 1
+    },
+    {
+      "id": "config-simple",
+      "label": "AWS Config",
+      "subtitle": "Compliance Monitor",
+      "icon": "/icons/aws/management/config.png",
+      "parentNode": "layer-2",
+      "order": 2
+    },
+    {
+      "id": "eventbridge-simple",
+      "label": "EventBridge",
+      "subtitle": "Event Automation",
+      "icon": "/icons/aws/integration/eventbridge.png",
+      "parentNode": "layer-2",
+      "order": 3
+    },
+    {
+      "id": "vpc-simple",
+      "label": "VPC Network",
+      "subtitle": "Private Only",
+      "icon": "/icons/aws/network/vpc.png",
+      "parentNode": "layer-3",
+      "order": 1
+    },
+    {
+      "id": "lattice-simple",
+      "label": "VPC Lattice",
+      "subtitle": "Service Mesh",
+      "icon": "/icons/aws/network/vpc.png",
+      "parentNode": "layer-3",
+      "order": 2
+    },
+    {
+      "id": "eks-simple",
+      "label": "EKS Fargate",
+      "subtitle": "Serverless K8s",
+      "icon": "/icons/aws/compute/elastic-kubernetes-service.png",
+      "parentNode": "layer-3",
+      "order": 3
+    },
+    {
+      "id": "banking-simple",
+      "label": "Banking Services",
+      "subtitle": "Go Microservices",
+      "icon": "/icons/aws/compute/fargate.png",
+      "parentNode": "layer-4",
+      "order": 1
+    },
+    {
+      "id": "argocd-simple",
+      "label": "ArgoCD",
+      "subtitle": "GitOps Engine",
+      "icon": "/icons/onprem/gitops/argocd.png",
+      "parentNode": "layer-4",
+      "order": 2
+    },
+    {
+      "id": "monitoring-simple",
+      "label": "Monitoring",
+      "subtitle": "Metrics & Alerts",
+      "icon": "/icons/onprem/monitoring/prometheus.png",
+      "parentNode": "layer-4",
+      "order": 3
+    }
+  ],
+  "edges": [
+    {
+      "id": "dev-flow",
+      "source": "github-simple",
+      "target": "actions-simple",
+      "label": "triggers build"
+    },
+    {
+      "id": "iac-flow",
+      "source": "terraform-simple",
+      "target": "vpc-simple",
+      "label": "provisions infra"
+    },
+    {
+      "id": "policy-flow",
+      "source": "opa-simple",
+      "target": "actions-simple",
+      "label": "validates code"
+    },
+    {
+      "id": "compliance-flow",
+      "source": "config-simple",
+      "target": "eventbridge-simple",
+      "label": "detects violations"
+    },
+    {
+      "id": "deploy-flow",
+      "source": "actions-simple",
+      "target": "argocd-simple",
+      "label": "updates GitOps"
+    },
+    {
+      "id": "runtime-flow",
+      "source": "argocd-simple",
+      "target": "banking-simple",
+      "label": "deploys services"
+    },
+    {
+      "id": "network-flow",
+      "source": "lattice-simple",
+      "target": "banking-simple",
+      "label": "zero trust mesh"
+    },
+    {
+      "id": "compute-flow",
+      "source": "eks-simple",
+      "target": "banking-simple",
+      "label": "runs containers"
+    },
+    {
+      "id": "observability-flow",
+      "source": "banking-simple",
+      "target": "monitoring-simple",
+      "label": "sends metrics"
+    }
+  ],
+  "name": "Imladris Platform - Simplified Overview"
+}

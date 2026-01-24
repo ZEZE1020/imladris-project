@@ -215,97 +215,129 @@
       "id": "terraform-to-aws",
       "source": "terraform-iac",
       "target": "aws-account",
-      "label": "provisions infrastructure"
+      "label": "provisions",
+      "color": "blue",
+      "style": "solid"
     },
     {
       "id": "github-to-actions",
       "source": "github-repo",
       "target": "github-actions",
-      "label": "triggers pipeline"
+      "label": "triggers",
+      "color": "green",
+      "style": "dashed"
     },
     {
       "id": "actions-to-ecr",
       "source": "github-actions",
       "target": "ecr",
-      "label": "pushes images"
+      "label": "pushes images",
+      "color": "green",
+      "style": "dashed"
     },
     {
       "id": "actions-to-gitops",
       "source": "github-actions",
       "target": "argocd-server",
-      "label": "updates manifests"
+      "label": "updates manifests",
+      "color": "green",
+      "style": "dashed"
     },
     {
       "id": "argocd-to-banking",
       "source": "argocd-server",
       "target": "banking-service",
-      "label": "deploys services"
+      "label": "deploys",
+      "color": "purple",
+      "style": "dotted"
     },
     {
       "id": "vpc-lattice-to-banking",
       "source": "vpc-lattice",
       "target": "banking-service",
-      "label": "service mesh"
+      "label": "zero trust mesh",
+      "color": "purple",
+      "style": "dotted"
     },
     {
       "id": "identity-to-eks",
       "source": "identity-center",
       "target": "eks-cluster",
-      "label": "authentication"
+      "label": "SSO auth",
+      "color": "purple",
+      "style": "dotted"
     },
     {
       "id": "config-to-eventbridge",
       "source": "aws-config",
       "target": "eventbridge",
-      "label": "compliance violations"
+      "label": "violations",
+      "color": "red",
+      "style": "solid"
     },
     {
       "id": "eventbridge-to-ssm",
       "source": "eventbridge",
       "target": "ssm-automation",
-      "label": "triggers remediation"
+      "label": "triggers",
+      "color": "red",
+      "style": "solid"
     },
     {
       "id": "ssm-back-to-aws",
       "source": "ssm-automation",
       "target": "vpc",
-      "label": "auto-fixes violations"
+      "label": "auto-fixes",
+      "color": "red",
+      "style": "solid"
     },
     {
       "id": "vpc-endpoints-to-aws",
       "source": "vpc-endpoints",
       "target": "ecr",
-      "label": "private API access"
+      "label": "private API",
+      "color": "purple",
+      "style": "dotted"
     },
     {
       "id": "fargate-to-banking",
       "source": "fargate-profile",
       "target": "banking-service",
-      "label": "runs containers"
+      "label": "serverless runtime",
+      "color": "purple",
+      "style": "dotted"
     },
     {
       "id": "banking-to-prometheus",
       "source": "banking-service",
       "target": "prometheus",
-      "label": "metrics"
+      "label": "metrics",
+      "color": "yellow",
+      "style": "dashed"
     },
     {
       "id": "prometheus-to-grafana",
       "source": "prometheus",
       "target": "grafana",
-      "label": "visualization"
+      "label": "dashboards",
+      "color": "yellow",
+      "style": "dashed"
     },
     {
       "id": "aws-to-cloudwatch",
       "source": "eks-cluster",
       "target": "cloudwatch",
-      "label": "logs & metrics"
+      "label": "logs",
+      "color": "yellow",
+      "style": "dashed"
     },
     {
       "id": "policy-validation",
       "source": "opa-conftest",
       "target": "github-actions",
-      "label": "validates policies"
+      "label": "validates",
+      "color": "green",
+      "style": "dashed"
     }
   ],
   "name": "Imladris: The Zero Trust Infinity Castle",
