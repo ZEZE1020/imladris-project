@@ -2,86 +2,89 @@
   "nodes": [
     {
       "id": "dev-cicd-zone",
-      "label": "Development & CI/CD Zone",
+      "label": "Development & CI/CD",
       "subtitle": "External Development Tools",
       "icon": "/icons/onprem/vcs/github.png",
       "type": "container",
-      "layout": "column"
+      "layout": "column",
+      "showHeader": true
     },
     {
       "id": "github-repo",
       "label": "GitHub Repository",
-      "subtitle": "Source Code & GitOps",
+      "subtitle": "Source Code & Policies",
       "icon": "/icons/onprem/vcs/github.png",
       "parentNode": "dev-cicd-zone",
       "order": 1
     },
     {
       "id": "opa-conftest",
-      "label": "OPA/Conftest",
-      "subtitle": "Policy Validation",
+      "label": "Policy Validation",
+      "subtitle": "OPA/Conftest Security Gates",
       "icon": "/icons/elastic/agent/agent.png",
       "parentNode": "dev-cicd-zone",
       "order": 2
     },
     {
       "id": "github-actions",
-      "label": "GitHub Actions",
-      "subtitle": "CI/CD Pipeline",
+      "label": "CI/CD Pipeline",
+      "subtitle": "Build → Test → Deploy",
       "icon": "/icons/onprem/ci/github-actions.png",
       "parentNode": "dev-cicd-zone",
       "order": 3
     },
     {
       "id": "terraform-iac",
-      "label": "Terraform",
-      "subtitle": "Infrastructure as Code",
+      "label": "Infrastructure as Code",
+      "subtitle": "Terraform Modules",
       "icon": "/icons/onprem/iac/terraform.png",
       "parentNode": "dev-cicd-zone",
       "order": 4
     },
     {
       "id": "aws-cloud",
-      "label": "AWS Cloud - Investment Bank",
-      "subtitle": "Zero Trust Infrastructure",
+      "label": "AWS Cloud",
+      "subtitle": "Zero Trust Banking Infrastructure",
       "icon": "/icons/aws/aws.png",
       "type": "container",
       "layout": "column",
       "position": {
         "relativeTo": "dev-cicd-zone",
         "side": "right"
-      }
+      },
+      "showHeader": true
     },
     {
       "id": "identity-center",
       "label": "IAM Identity Center",
-      "subtitle": "SSO & Access Control",
+      "subtitle": "Centralized SSO & RBAC",
       "icon": "/icons/aws/security/identity-and-access-management-iam.png",
       "parentNode": "aws-cloud",
       "order": 1
     },
     {
       "id": "ecr",
-      "label": "ECR Repository",
-      "subtitle": "Container Registry",
+      "label": "Container Registry",
+      "subtitle": "Secure Image Storage",
       "icon": "/icons/aws/compute/ec2-container-registry.png",
       "parentNode": "aws-cloud",
       "order": 2
     },
     {
       "id": "governance-zone",
-      "label": "Governance & Compliance",
-      "subtitle": "Self-Healing Policy Engine",
+      "label": "Self-Healing Governance",
+      "subtitle": "Automated Compliance Engine",
       "icon": "/icons/aws/management/config.png",
       "type": "container",
       "parentNode": "aws-cloud",
       "layout": "row",
-      "order": 3
+      "order": 3,
+      "showHeader": true
     },
     {
       "id": "aws-config",
       "label": "AWS Config",
-      "subtitle": "Compliance Monitor",
+      "subtitle": "Resource Monitoring",
       "icon": "/icons/aws/management/config.png",
       "parentNode": "governance-zone",
       "order": 1
@@ -89,7 +92,7 @@
     {
       "id": "eventbridge",
       "label": "EventBridge",
-      "subtitle": "Event Automation",
+      "subtitle": "Event-Driven Triggers",
       "icon": "/icons/aws/integration/eventbridge.png",
       "parentNode": "governance-zone",
       "order": 2
@@ -97,25 +100,26 @@
     {
       "id": "ssm-automation",
       "label": "Systems Manager",
-      "subtitle": "Auto-Remediation",
+      "subtitle": "Violation Remediation",
       "icon": "/icons/aws/management/systems-manager.png",
       "parentNode": "governance-zone",
       "order": 3
     },
     {
       "id": "network-zone",
-      "label": "VPC Network - Zero Trust",
-      "subtitle": "imladris-prod-vpc (10.0.0.0/16)",
+      "label": "Zero Trust Network",
+      "subtitle": "Private-Only VPC (10.0.0.0/16)",
       "icon": "/icons/aws/network/vpc.png",
       "type": "container",
       "parentNode": "aws-cloud",
       "layout": "column",
-      "order": 4
+      "order": 4,
+      "showHeader": true
     },
     {
       "id": "vpc-lattice",
-      "label": "VPC Lattice",
-      "subtitle": "Service Mesh",
+      "label": "Service Mesh",
+      "subtitle": "IAM-Authenticated Communication",
       "icon": "/icons/aws/network/vpc.png",
       "parentNode": "network-zone",
       "order": 1
@@ -123,7 +127,7 @@
     {
       "id": "vpc-endpoints",
       "label": "VPC Endpoints",
-      "subtitle": "Private AWS APIs",
+      "subtitle": "Private AWS Service Access",
       "icon": "/icons/aws/network/endpoint.png",
       "parentNode": "network-zone",
       "order": 2
@@ -131,40 +135,41 @@
     {
       "id": "private-subnets",
       "label": "Private Subnets",
-      "subtitle": "3 AZs - No Internet Access",
+      "subtitle": "Multi-AZ with No Internet",
       "icon": "/icons/aws/network/private-subnet.png",
       "parentNode": "network-zone",
       "order": 3
     },
     {
       "id": "compute-zone",
-      "label": "EKS Fargate Cluster",
-      "subtitle": "imladris-prod-cluster",
+      "label": "Serverless Kubernetes",
+      "subtitle": "EKS Fargate Cluster",
       "icon": "/icons/aws/compute/elastic-kubernetes-service.png",
       "type": "container",
       "parentNode": "aws-cloud",
       "layout": "row",
-      "order": 5
+      "order": 5,
+      "showHeader": true
     },
     {
       "id": "argocd-server",
       "label": "ArgoCD Server",
-      "subtitle": "GitOps Engine",
+      "subtitle": "Continuous Deployment",
       "icon": "/icons/onprem/gitops/argocd.png",
       "parentNode": "compute-zone",
       "order": 1
     },
     {
       "id": "banking-service",
-      "label": "Banking Services",
-      "subtitle": "Go Microservices",
+      "label": "Banking Applications",
+      "subtitle": "Immutable Microservices",
       "icon": "/icons/aws/compute/fargate.png",
       "parentNode": "compute-zone",
       "order": 2
     },
     {
       "id": "observability-zone",
-      "label": "Observability Stack",
+      "label": "Observability",
       "subtitle": "Monitoring & Alerting",
       "icon": "/icons/onprem/monitoring/prometheus.png",
       "type": "container",
@@ -172,7 +177,8 @@
       "position": {
         "relativeTo": "aws-cloud",
         "side": "right"
-      }
+      },
+      "showHeader": true
     },
     {
       "id": "prometheus",
@@ -204,7 +210,7 @@
       "id": "dev-flow-1",
       "source": "github-repo",
       "target": "opa-conftest",
-      "label": "policy check",
+      "label": "validate policies",
       "color": "green",
       "style": "solid"
     },
@@ -212,7 +218,7 @@
       "id": "dev-flow-2",
       "source": "opa-conftest",
       "target": "github-actions",
-      "label": "validation ok",
+      "label": "approved",
       "color": "green",
       "style": "solid"
     },
@@ -220,7 +226,7 @@
       "id": "dev-flow-3",
       "source": "github-actions",
       "target": "ecr",
-      "label": "push image",
+      "label": "build & push",
       "color": "green",
       "style": "solid"
     },
@@ -228,7 +234,7 @@
       "id": "dev-flow-4",
       "source": "github-actions",
       "target": "argocd-server",
-      "label": "update GitOps",
+      "label": "update manifests",
       "color": "green",
       "style": "solid"
     },
@@ -236,7 +242,7 @@
       "id": "iac-flow",
       "source": "terraform-iac",
       "target": "network-zone",
-      "label": "provisions",
+      "label": "provision",
       "color": "blue",
       "style": "solid"
     },
@@ -244,7 +250,7 @@
       "id": "identity-flow",
       "source": "identity-center",
       "target": "compute-zone",
-      "label": "SSO auth",
+      "label": "authenticate",
       "color": "purple",
       "style": "dotted"
     },
@@ -252,7 +258,7 @@
       "id": "registry-flow",
       "source": "ecr",
       "target": "banking-service",
-      "label": "pull images",
+      "label": "secure pull",
       "color": "green",
       "style": "dashed"
     },
@@ -260,7 +266,7 @@
       "id": "vpc-endpoints-flow",
       "source": "vpc-endpoints",
       "target": "ecr",
-      "label": "private API",
+      "label": "private access",
       "color": "purple",
       "style": "dotted"
     },
@@ -268,7 +274,7 @@
       "id": "deployment-flow",
       "source": "argocd-server",
       "target": "banking-service",
-      "label": "deploys",
+      "label": "deploy apps",
       "color": "purple",
       "style": "dotted"
     },
@@ -276,7 +282,7 @@
       "id": "service-mesh-flow",
       "source": "vpc-lattice",
       "target": "banking-service",
-      "label": "zero trust mesh",
+      "label": "secure mesh",
       "color": "purple",
       "style": "dotted"
     },
@@ -284,7 +290,7 @@
       "id": "compute-network-flow",
       "source": "private-subnets",
       "target": "banking-service",
-      "label": "runs on",
+      "label": "host services",
       "color": "purple",
       "style": "dotted"
     },
@@ -292,7 +298,7 @@
       "id": "governance-flow-1",
       "source": "aws-config",
       "target": "eventbridge",
-      "label": "violations",
+      "label": "detect violations",
       "color": "red",
       "style": "solid"
     },
@@ -300,7 +306,7 @@
       "id": "governance-flow-2",
       "source": "eventbridge",
       "target": "ssm-automation",
-      "label": "triggers",
+      "label": "trigger fix",
       "color": "red",
       "style": "solid"
     },
@@ -308,7 +314,7 @@
       "id": "governance-flow-3",
       "source": "ssm-automation",
       "target": "network-zone",
-      "label": "auto-fix",
+      "label": "auto-remediate",
       "color": "red",
       "style": "solid"
     },
@@ -316,7 +322,7 @@
       "id": "monitoring-flow-1",
       "source": "banking-service",
       "target": "prometheus",
-      "label": "metrics",
+      "label": "export metrics",
       "color": "yellow",
       "style": "dashed"
     },
@@ -324,7 +330,7 @@
       "id": "monitoring-flow-2",
       "source": "banking-service",
       "target": "cloudwatch",
-      "label": "logs",
+      "label": "stream logs",
       "color": "yellow",
       "style": "dashed"
     },
@@ -332,7 +338,7 @@
       "id": "monitoring-flow-3",
       "source": "prometheus",
       "target": "grafana",
-      "label": "dashboards",
+      "label": "visualize",
       "color": "yellow",
       "style": "dashed"
     }
