@@ -68,7 +68,7 @@ Infrastructure as Code using Terraform. Provides:
 Policy-as-Code using OPA and Conftest. Enforces:
 - No public ingress (blocks 0.0.0.0/0 access on all ports)
 - VPC Lattice mandatory for service communication
-- Fargate-only compute (prohibits EC2 instances)
+- Fargate-only compute for application workloads (Harbor registry EC2 instance is exempted for supply chain security)
 - HTTPS encryption for all listeners
 
 ### [imladris-gitops/](./imladris-gitops/)

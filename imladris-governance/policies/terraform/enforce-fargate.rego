@@ -5,13 +5,16 @@ package terraform.compute
 
 import rego.v1
 
-# Deny EC2 instances - use Fargate only
+# Deny EC2 instances - use Fargate only (with Harbor registry exception)
 deny contains msg if {
     some i
     input.planned_values.root_module.resources[i].type == "aws_instance"
     resource := input.planned_values.root_module.resources[i]
 
-    msg := sprintf("VIOLATION: EC2 instance '%s' is not allowed. Use EKS Fargate for compute.", [resource.address])
+    # Allow Harbor registry instances for supply chain security
+    not is_harbor_registry_instance(resource)
+
+    msg := sprintf("VIOLATION: EC2 instance '%s' is not allowed. Use EKS Fargate for compute. (Harbor registry instances are exempt for supply chain security)", [resource.address])
 }
 
 # Deny EKS node groups - use Fargate only
@@ -64,6 +67,24 @@ has_fargate_profile(cluster_name) if {
     resource := input.planned_values.root_module.resources[i]
 
     resource.values.cluster_name == cluster_name
+}
+
+# Helper function to identify Harbor registry instances (allowed exception)
+is_harbor_registry_instance(resource) if {
+    # Check if instance has Harbor-related tags or name
+    contains(lower(resource.address), "harbor")
+}
+
+is_harbor_registry_instance(resource) if {
+    # Check if instance is part of secure-registry module
+    contains(resource.address, "secure_registry")
+}
+
+is_harbor_registry_instance(resource) if {
+    # Check tags for Harbor/SecureRegistry purpose
+    some tag_key, tag_value in resource.values.tags
+    tag_key == "Purpose"
+    tag_value == "SecureRegistry"
 }
 
 # Helper function to identify public subnets

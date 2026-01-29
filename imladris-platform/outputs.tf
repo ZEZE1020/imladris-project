@@ -42,3 +42,27 @@ output "eventbridge_rule_name" {
   description = "EventBridge rule name for compliance violations"
   value       = module.governance.eventbridge_rule_name
 }
+
+# Secure Registry Module Outputs
+output "harbor_registry_url" {
+  description = "Harbor registry URL for CI/CD configuration"
+  value       = module.secure_registry.harbor_url
+  sensitive   = false
+}
+
+output "harbor_instance_id" {
+  description = "EC2 instance ID of Harbor registry"
+  value       = module.secure_registry.harbor_instance_id
+}
+
+output "harbor_dockerhub_proxy_url" {
+  description = "Docker Hub proxy cache URL for CI/CD builds"
+  value       = module.secure_registry.dockerhub_proxy_url
+  sensitive   = false
+}
+
+output "harbor_admin_password_ssm_parameter" {
+  description = "SSM parameter name containing Harbor admin password"
+  value       = module.secure_registry.admin_password_ssm_parameter
+  sensitive   = false
+}

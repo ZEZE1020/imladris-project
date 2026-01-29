@@ -30,6 +30,13 @@ module "secure_registry" {
   cicd_subnet_ids  = module.networking.private_subnet_ids
   build_subnet_ids = module.networking.private_subnet_ids
 
+  # Harbor configuration
+  instance_type                   = var.harbor_instance_type
+  storage_size_gb                = var.harbor_storage_size_gb
+  enable_trivy_scanner           = var.enable_harbor_trivy_scanner
+  scan_on_push                   = true
+  block_critical_vulnerabilities = true
+
   depends_on = [
     module.networking,
     module.governance
