@@ -10,10 +10,30 @@ Imladris provides a secure, compliant AWS environment that:
 - Enforces immutable infrastructure using EKS Fargate exclusively
 - Automates security remediation using AWS Config, EventBridge, and SSM
 - Validates all changes through policy-as-code before deployment
+- **NEW**: Secures the software supply chain with Harbor container registry and vulnerability scanning
+
+## What's New: Supply Chain Security
+
+🚀 **Latest Enhancement**: We've added a **Harbor-based Secure Pull-Through Cache** that creates an impenetrable defense against supply chain attacks while maintaining developer velocity.
+
+**Key Benefits:**
+- ✅ **Zero Internet Builds**: Build processes never directly access public registries
+- ✅ **Critical CVE Blocking**: Automatic rejection of vulnerable base images
+- ✅ **Banking Compliance**: Complete audit trail for regulatory requirements
+- ✅ **Offline Resilience**: Local caching eliminates external dependencies
 
 ## Platform Architecture
 
-The platform implements a sophisticated **Hybrid Registry Model** for complete supply chain security:
+The platform consists of four integrated components with **enhanced supply chain security**:
+
+```
+Developer Code → Policy Validation → Infrastructure → Kubernetes Applications
+     GitHub          OPA/Rego         Terraform      ArgoCD Deployment
+                   (Governance)       (Platform)       (GitOps)
+```
+
+### Enhanced Supply Chain Security (NEW)
+We've added a **Hybrid Registry Model** that creates a secure firewall for all container dependencies:
 
 ```
 Docker Hub → Harbor (Scan & Cache) → CI/CD Build → ECR → EKS Fargate
@@ -21,14 +41,14 @@ Docker Hub → Harbor (Scan & Cache) → CI/CD Build → ECR → EKS Fargate
                   Firewall            Images        Registry
 ```
 
-### Supply Chain Flow
+**How it works:**
 - **Harbor's Role**: Cache, scan, and serve public base images (from Docker Hub/Quay) to the build environment. This ensures we never pull directly from the internet during builds.
 - **ECR's Role**: Store the final, compiled application images that are deployed to EKS Fargate.
 - **Why Both?**: Harbor sanitizes the inputs (Base Images); ECR secures the outputs (App Images).
 
 ### Core Architecture Layers
-- **Infrastructure**: Terraform modules for VPC, EKS, VPC Lattice, Harbor Registry, and self-healing controls
-- **Supply Chain Security**: Harbor proxy cache with vulnerability scanning for all upstream dependencies
+- **Infrastructure**: Terraform modules for VPC, EKS, VPC Lattice, and self-healing controls
+- **Supply Chain Security**: NEW - Harbor proxy cache with vulnerability scanning for all upstream dependencies
 - **Governance**: OPA policies enforcing zero-public-access, VPC Lattice, and Fargate-only compute
 - **GitOps**: ArgoCD managing application state across Kubernetes clusters
 - **Services**: Go template for rapid development of compliant microservices
@@ -38,9 +58,9 @@ Docker Hub → Harbor (Scan & Cache) → CI/CD Build → ECR → EKS Fargate
 ### [imladris-platform/](./imladris-platform/)
 Infrastructure as Code using Terraform. Provides:
 - Private VPC (10.0.0.0/16) with no internet gateway
-- Harbor Container Registry with secure pull-through cache for supply chain protection
 - VPC Lattice for service-to-service communication
 - EKS Fargate cluster for containerized workloads
+- **NEW**: Harbor Container Registry with secure pull-through cache for supply chain protection
 - AWS Config, EventBridge, and SSM for automated remediation
 - IAM Identity Center for centralized access control
 
@@ -105,7 +125,7 @@ kubectl apply -f bootstrap/root.yaml
 - Encrypted in transit; TLS enforced everywhere
 - Least privilege; minimal IAM permissions
 
-### Supply Chain Validation
+### Supply Chain Validation (NEW SECURITY LAYER)
 - **Dependency Firewall**: All base images are sourced exclusively from the internal Harbor proxy, ensuring 100% vulnerability screening before the build process begins
 - **Critical Vulnerability Blocking**: Images with Critical CVEs are automatically blocked from being served to build environments
 - **Dependency Confusion Prevention**: Prevents 'Dependency Confusion' attacks and outages by enforcing a single, scanned entry point for all open-source libraries
@@ -117,7 +137,7 @@ kubectl apply -f bootstrap/root.yaml
 - EventBridge triggers remediation on policy violations
 - SSM Automation reverts non-compliant changes
 - Continuous validation through OPA policies
-- Harbor Trivy scanner validates all cached images for known vulnerabilities
+- **NEW**: Harbor Trivy scanner validates all cached images for known vulnerabilities
 
 ## Architecture Decisions
 
@@ -129,3 +149,10 @@ Immutable compute eliminates persistent state vulnerability, managed patching by
 
 ### Why GitOps?
 Git audit trail, drift detection, simple rollback, no external access to cluster.
+
+### Why Harbor Secure Registry? (NEW)
+Investment banking requires complete control over the software supply chain. Harbor provides:
+- **Zero Internet Dependencies**: Build processes never touch public registries directly
+- **Banking Compliance**: Complete audit trail of all base images for regulatory reporting
+- **Vulnerability Prevention**: Critical CVE blocking prevents compromised images from entering production
+- **Operational Resilience**: Local caching eliminates dependency on external service availability

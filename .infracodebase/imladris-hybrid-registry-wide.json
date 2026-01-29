@@ -5,10 +5,10 @@
       "id": "docker-hub",
       "label": "DOCKER HUB",
       "subtitle": "PUBLIC IMAGES",
-      "icon": "/icons/onprem/container/docker.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/onprem/container/docker.png",
       "type": "resource",
       "x": 100,
-      "y": 200
+      "y": 220
     },
     {
       "id": "github",
@@ -16,52 +16,52 @@
       "x": 100,
       "y": 450,
       "subtitle": "SOURCE CODE",
-      "icon": "/icons/onprem/vcs/github.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/onprem/vcs/github.png",
       "type": "resource"
     },
     {
       "id": "harbor",
       "label": "HARBOR REGISTRY",
       "subtitle": "SCAN & CACHE",
-      "icon": "/icons/onprem/registry/harbor.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/onprem/registry/harbor.png",
       "type": "resource",
-      "x": 400,
-      "y": 200
+      "x": 394,
+      "y": 220
     },
     {
       "id": "codebuild",
       "label": "CI/CD BUILD",
       "subtitle": "CODEBUILD",
-      "icon": "/icons/aws/devtools/codebuild.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/devtools/codebuild.png",
       "type": "resource",
-      "x": 700,
-      "y": 200
+      "x": 691,
+      "y": 220
     },
     {
       "id": "ecr",
       "label": "ECR",
       "subtitle": "APP IMAGES",
-      "icon": "/icons/aws/compute/ec2-container-registry.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/compute/ec2-container-registry.png",
       "type": "resource",
-      "x": 1000,
-      "y": 200
+      "x": 1001,
+      "y": 220
     },
     {
       "id": "eks-fargate",
       "label": "EKS FARGATE",
       "subtitle": "PRODUCTION",
-      "icon": "/icons/aws/compute/fargate.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/compute/fargate.png",
       "type": "resource",
-      "x": 1300,
-      "y": 200
+      "x": 1309,
+      "y": 220
     },
     {
       "id": "trivy",
       "label": "TRIVY SCANNER",
-      "x": 400,
-      "y": 450,
+      "x": 394,
+      "y": 438,
       "subtitle": "VULNERABILITY SCAN",
-      "icon": "/icons/aws/security/shield.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/security/shield.png",
       "type": "resource"
     }
   ],
