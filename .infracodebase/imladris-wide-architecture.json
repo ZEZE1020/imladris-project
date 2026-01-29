@@ -1,0 +1,386 @@
+{
+  "name": "Imladris Zero Trust Banking Platform - Wide View",
+  "nodes": [
+    {
+      "id": "dev-section",
+      "label": "DEVELOPMENT & POLICY",
+      "x": 0,
+      "y": 0,
+      "subtitle": "Source Code + Security Gates",
+      "icon": "/icons/onprem/vcs/github.png",
+      "type": "container",
+      "width": 200,
+      "height": 1016
+    },
+    {
+      "id": "github",
+      "label": "GITHUB REPOSITORY",
+      "x": 40,
+      "y": 76,
+      "subtitle": "Source Code & Policies",
+      "icon": "/icons/onprem/vcs/github.png",
+      "parentId": "dev-section"
+    },
+    {
+      "id": "opa",
+      "label": "OPA CONFTEST",
+      "x": 40,
+      "y": 326,
+      "subtitle": "Security Policy Validation",
+      "icon": "/icons/elastic/agent/agent.png",
+      "parentId": "dev-section"
+    },
+    {
+      "id": "actions",
+      "label": "GITHUB ACTIONS",
+      "x": 40,
+      "y": 576,
+      "subtitle": "Automated CI/CD Pipeline",
+      "icon": "/icons/onprem/ci/github-actions.png",
+      "parentId": "dev-section"
+    },
+    {
+      "id": "terraform",
+      "label": "TERRAFORM",
+      "x": 40,
+      "y": 826,
+      "subtitle": "Infrastructure as Code",
+      "icon": "/icons/onprem/iac/terraform.png",
+      "parentId": "dev-section"
+    },
+    {
+      "id": "aws-section",
+      "label": "AWS ZERO TRUST INFRASTRUCTURE",
+      "x": 280,
+      "y": 67,
+      "subtitle": "Secure Banking Cloud Environment",
+      "icon": "/icons/aws/aws.png",
+      "type": "container",
+      "width": 1120,
+      "height": 882
+    },
+    {
+      "id": "identity-auth",
+      "label": "IDENTITY & AUTHENTICATION",
+      "x": 40,
+      "y": 76,
+      "subtitle": "Centralized Access Control",
+      "icon": "/icons/aws/security/identity-and-access-management-iam.png",
+      "type": "container",
+      "parentId": "aws-section",
+      "width": 200,
+      "height": 516
+    },
+    {
+      "id": "sso",
+      "label": "IAM IDENTITY CENTER",
+      "x": 40,
+      "y": 76,
+      "subtitle": "Single Sign-On Platform",
+      "icon": "/icons/aws/security/identity-and-access-management-iam.png",
+      "parentId": "identity-auth"
+    },
+    {
+      "id": "registry",
+      "label": "ECR REGISTRY",
+      "x": 40,
+      "y": 326,
+      "subtitle": "Secure Container Storage",
+      "icon": "/icons/aws/compute/ec2-container-registry.png",
+      "parentId": "identity-auth"
+    },
+    {
+      "id": "governance",
+      "label": "SELF-HEALING GOVERNANCE",
+      "x": 320,
+      "y": 76,
+      "subtitle": "Automated Compliance Engine",
+      "icon": "/icons/aws/management/config.png",
+      "type": "container",
+      "parentId": "aws-section",
+      "width": 200,
+      "height": 766
+    },
+    {
+      "id": "config",
+      "label": "AWS CONFIG",
+      "x": 40,
+      "y": 76,
+      "subtitle": "Resource Change Monitoring",
+      "icon": "/icons/aws/management/config.png",
+      "parentId": "governance"
+    },
+    {
+      "id": "eventbridge",
+      "label": "EVENTBRIDGE",
+      "x": 40,
+      "y": 326,
+      "subtitle": "Event-Driven Automation",
+      "icon": "/icons/aws/integration/eventbridge.png",
+      "parentId": "governance"
+    },
+    {
+      "id": "ssm",
+      "label": "SYSTEMS MANAGER",
+      "x": 40,
+      "y": 576,
+      "subtitle": "Auto-Remediation Engine",
+      "icon": "/icons/aws/management/systems-manager.png",
+      "parentId": "governance"
+    },
+    {
+      "id": "networking",
+      "label": "ZERO TRUST NETWORK",
+      "x": 600,
+      "y": 76,
+      "subtitle": "Private VPC + Service Mesh",
+      "icon": "/icons/aws/network/vpc.png",
+      "type": "container",
+      "parentId": "aws-section",
+      "width": 200,
+      "height": 766
+    },
+    {
+      "id": "vpc",
+      "label": "PRIVATE VPC",
+      "x": 40,
+      "y": 76,
+      "subtitle": "10.0.0.0/16 Network",
+      "icon": "/icons/aws/network/vpc.png",
+      "parentId": "networking"
+    },
+    {
+      "id": "lattice",
+      "label": "VPC LATTICE",
+      "x": 40,
+      "y": 326,
+      "subtitle": "Service Mesh Platform",
+      "icon": "/icons/aws/network/vpc.png",
+      "parentId": "networking"
+    },
+    {
+      "id": "endpoints",
+      "label": "VPC ENDPOINTS",
+      "x": 40,
+      "y": 576,
+      "subtitle": "Private AWS API Access",
+      "icon": "/icons/aws/network/endpoint.png",
+      "parentId": "networking"
+    },
+    {
+      "id": "compute",
+      "label": "SERVERLESS KUBERNETES",
+      "x": 880,
+      "y": 76,
+      "subtitle": "EKS Fargate Cluster",
+      "icon": "/icons/aws/compute/elastic-kubernetes-service.png",
+      "type": "container",
+      "parentId": "aws-section",
+      "width": 200,
+      "height": 766
+    },
+    {
+      "id": "argocd",
+      "label": "ARGOCD",
+      "x": 40,
+      "y": 76,
+      "subtitle": "GitOps Deployment Engine",
+      "icon": "/icons/onprem/gitops/argocd.png",
+      "parentId": "compute"
+    },
+    {
+      "id": "fargate",
+      "label": "FARGATE PODS",
+      "x": 40,
+      "y": 326,
+      "subtitle": "Immutable Container Runtime",
+      "icon": "/icons/aws/compute/fargate.png",
+      "parentId": "compute"
+    },
+    {
+      "id": "banking",
+      "label": "BANKING APPLICATIONS",
+      "x": 40,
+      "y": 576,
+      "subtitle": "Go Microservices Platform",
+      "icon": "/icons/aws/compute/fargate.png",
+      "parentId": "compute"
+    },
+    {
+      "id": "monitoring-section",
+      "label": "OBSERVABILITY & MONITORING",
+      "x": 1480,
+      "y": 125,
+      "subtitle": "Metrics, Logs & Dashboards",
+      "icon": "/icons/onprem/monitoring/prometheus.png",
+      "type": "container",
+      "width": 200,
+      "height": 766
+    },
+    {
+      "id": "prometheus",
+      "label": "PROMETHEUS",
+      "x": 40,
+      "y": 76,
+      "subtitle": "Metrics Collection Store",
+      "icon": "/icons/onprem/monitoring/prometheus.png",
+      "parentId": "monitoring-section"
+    },
+    {
+      "id": "grafana",
+      "label": "GRAFANA",
+      "x": 40,
+      "y": 326,
+      "subtitle": "Visualization Dashboards",
+      "icon": "/icons/onprem/monitoring/grafana.png",
+      "parentId": "monitoring-section"
+    },
+    {
+      "id": "cloudwatch",
+      "label": "CLOUDWATCH",
+      "x": 40,
+      "y": 576,
+      "subtitle": "AWS Native Logging",
+      "icon": "/icons/aws/management/cloudwatch.png",
+      "parentId": "monitoring-section"
+    }
+  ],
+  "edges": [
+    {
+      "id": "code-to-policy",
+      "source": "github",
+      "target": "opa",
+      "label": "VALIDATE POLICIES",
+      "color": "green",
+      "style": "solid"
+    },
+    {
+      "id": "policy-to-ci",
+      "source": "opa",
+      "target": "actions",
+      "label": "SECURITY APPROVED",
+      "color": "green",
+      "style": "solid"
+    },
+    {
+      "id": "ci-to-registry",
+      "source": "actions",
+      "target": "registry",
+      "label": "PUSH SECURE IMAGE",
+      "color": "green",
+      "style": "solid"
+    },
+    {
+      "id": "ci-to-gitops",
+      "source": "actions",
+      "target": "argocd",
+      "label": "UPDATE MANIFESTS",
+      "color": "green",
+      "style": "solid"
+    },
+    {
+      "id": "terraform-to-aws",
+      "source": "terraform",
+      "target": "networking",
+      "label": "PROVISION INFRASTRUCTURE",
+      "color": "blue",
+      "style": "solid"
+    },
+    {
+      "id": "auth-to-cluster",
+      "source": "sso",
+      "target": "compute",
+      "label": "SSO AUTHENTICATION",
+      "color": "purple",
+      "style": "dotted"
+    },
+    {
+      "id": "registry-to-apps",
+      "source": "registry",
+      "target": "banking",
+      "label": "PULL SECURE IMAGES",
+      "color": "purple",
+      "style": "dotted"
+    },
+    {
+      "id": "endpoints-to-registry",
+      "source": "endpoints",
+      "target": "registry",
+      "label": "PRIVATE API ACCESS",
+      "color": "purple",
+      "style": "dotted"
+    },
+    {
+      "id": "gitops-deploy",
+      "source": "argocd",
+      "target": "banking",
+      "label": "DEPLOY APPLICATIONS",
+      "color": "purple",
+      "style": "dotted"
+    },
+    {
+      "id": "service-mesh",
+      "source": "lattice",
+      "target": "banking",
+      "label": "ZERO TRUST MESH",
+      "color": "purple",
+      "style": "dotted"
+    },
+    {
+      "id": "fargate-runtime",
+      "source": "fargate",
+      "target": "banking",
+      "label": "SERVERLESS RUNTIME",
+      "color": "purple",
+      "style": "dotted"
+    },
+    {
+      "id": "compliance-detect",
+      "source": "config",
+      "target": "eventbridge",
+      "label": "DETECT VIOLATIONS",
+      "color": "red",
+      "style": "solid"
+    },
+    {
+      "id": "event-trigger",
+      "source": "eventbridge",
+      "target": "ssm",
+      "label": "TRIGGER REMEDIATION",
+      "color": "red",
+      "style": "solid"
+    },
+    {
+      "id": "auto-fix",
+      "source": "ssm",
+      "target": "networking",
+      "label": "AUTO-REMEDIATE",
+      "color": "red",
+      "style": "solid"
+    },
+    {
+      "id": "metrics-flow",
+      "source": "banking",
+      "target": "prometheus",
+      "label": "EXPORT METRICS",
+      "color": "yellow",
+      "style": "dashed"
+    },
+    {
+      "id": "logs-flow",
+      "source": "banking",
+      "target": "cloudwatch",
+      "label": "STREAM LOGS",
+      "color": "yellow",
+      "style": "dashed"
+    },
+    {
+      "id": "dashboard-flow",
+      "source": "prometheus",
+      "target": "grafana",
+      "label": "VISUALIZE DATA",
+      "color": "yellow",
+      "style": "dashed"
+    }
+  ]
+}

@@ -1,0 +1,137 @@
+{
+  "name": "IMLADRIS HYBRID REGISTRY: SUPPLY CHAIN SECURITY",
+  "nodes": [
+    {
+      "id": "docker-hub",
+      "label": "DOCKER HUB",
+      "subtitle": "PUBLIC IMAGES",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/onprem/container/docker.png",
+      "type": "resource",
+      "x": 100,
+      "y": 220
+    },
+    {
+      "id": "github",
+      "label": "GITHUB",
+      "x": 100,
+      "y": 450,
+      "subtitle": "SOURCE CODE",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/onprem/vcs/github.png",
+      "type": "resource"
+    },
+    {
+      "id": "harbor",
+      "label": "HARBOR REGISTRY",
+      "subtitle": "SCAN & CACHE",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/onprem/registry/harbor.png",
+      "type": "resource",
+      "x": 394,
+      "y": 220
+    },
+    {
+      "id": "codebuild",
+      "label": "CI/CD BUILD",
+      "subtitle": "CODEBUILD",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/devtools/codebuild.png",
+      "type": "resource",
+      "x": 691,
+      "y": 220
+    },
+    {
+      "id": "ecr",
+      "label": "ECR",
+      "subtitle": "APP IMAGES",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/compute/ec2-container-registry.png",
+      "type": "resource",
+      "x": 1001,
+      "y": 220
+    },
+    {
+      "id": "eks-fargate",
+      "label": "EKS FARGATE",
+      "subtitle": "PRODUCTION",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/compute/fargate.png",
+      "type": "resource",
+      "x": 1309,
+      "y": 220
+    },
+    {
+      "id": "trivy",
+      "label": "TRIVY SCANNER",
+      "x": 394,
+      "y": 438,
+      "subtitle": "VULNERABILITY SCAN",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/security/shield.png",
+      "type": "resource"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "docker-hub",
+      "target": "harbor",
+      "label": "CACHE IMAGES",
+      "color": "blue"
+    },
+    {
+      "id": "e2",
+      "source": "github",
+      "target": "codebuild",
+      "label": "TRIGGER BUILD",
+      "color": "green"
+    },
+    {
+      "id": "e3",
+      "source": "harbor",
+      "target": "codebuild",
+      "label": "SECURE IMAGES",
+      "color": "purple"
+    },
+    {
+      "id": "e4",
+      "source": "codebuild",
+      "target": "ecr",
+      "label": "PUSH APPS",
+      "color": "green"
+    },
+    {
+      "id": "e5",
+      "source": "ecr",
+      "target": "eks-fargate",
+      "label": "DEPLOY",
+      "color": "green"
+    },
+    {
+      "id": "e6",
+      "source": "trivy",
+      "target": "harbor",
+      "label": "SCAN RESULTS",
+      "color": "red",
+      "style": "dashed"
+    }
+  ],
+  "legend": {
+    "edges": [
+      {
+        "label": "Supply Chain Security",
+        "color": "blue",
+        "style": "solid"
+      },
+      {
+        "label": "CI/CD Flow",
+        "color": "green",
+        "style": "solid"
+      },
+      {
+        "label": "Secure Image Pull",
+        "color": "purple",
+        "style": "solid"
+      },
+      {
+        "label": "Security Scanning",
+        "color": "red",
+        "style": "dashed"
+      }
+    ]
+  }
+}

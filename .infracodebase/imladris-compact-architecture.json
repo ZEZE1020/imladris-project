@@ -1,0 +1,368 @@
+{
+  "name": "Imladris Zero Trust Platform - Compact View",
+  "nodes": [
+    {
+      "id": "dev-zone",
+      "label": "DEVELOPMENT",
+      "x": 0,
+      "y": 0,
+      "subtitle": "Code & Security",
+      "icon": "/icons/onprem/vcs/github.png",
+      "type": "container",
+      "width": 200,
+      "height": 766
+    },
+    {
+      "id": "github",
+      "label": "GITHUB",
+      "x": 40,
+      "y": 76,
+      "subtitle": "Source Code",
+      "icon": "/icons/onprem/vcs/github.png",
+      "parentId": "dev-zone"
+    },
+    {
+      "id": "opa",
+      "label": "OPA POLICIES",
+      "x": 40,
+      "y": 326,
+      "subtitle": "Security Gates",
+      "icon": "/icons/elastic/agent/agent.png",
+      "parentId": "dev-zone"
+    },
+    {
+      "id": "cicd",
+      "label": "CI/CD PIPELINE",
+      "x": 40,
+      "y": 576,
+      "subtitle": "Build & Deploy",
+      "icon": "/icons/onprem/ci/github-actions.png",
+      "parentId": "dev-zone"
+    },
+    {
+      "id": "aws-zone",
+      "label": "AWS CLOUD",
+      "x": 280,
+      "y": -58,
+      "subtitle": "Zero Trust Infrastructure",
+      "icon": "/icons/aws/aws.png",
+      "type": "container",
+      "width": 1120,
+      "height": 882
+    },
+    {
+      "id": "identity",
+      "label": "IDENTITY CENTER",
+      "x": 40,
+      "y": 76,
+      "subtitle": "SSO & Auth",
+      "icon": "/icons/aws/security/identity-and-access-management-iam.png",
+      "type": "container",
+      "parentId": "aws-zone",
+      "width": 200,
+      "height": 516
+    },
+    {
+      "id": "sso",
+      "label": "SSO",
+      "x": 40,
+      "y": 76,
+      "subtitle": "Access Control",
+      "icon": "/icons/aws/security/identity-and-access-management-iam.png",
+      "parentId": "identity"
+    },
+    {
+      "id": "ecr",
+      "label": "ECR",
+      "x": 40,
+      "y": 326,
+      "subtitle": "Images",
+      "icon": "/icons/aws/compute/ec2-container-registry.png",
+      "parentId": "identity"
+    },
+    {
+      "id": "governance",
+      "label": "SELF-HEALING",
+      "x": 320,
+      "y": 76,
+      "subtitle": "Auto Compliance",
+      "icon": "/icons/aws/management/config.png",
+      "type": "container",
+      "parentId": "aws-zone",
+      "width": 200,
+      "height": 766
+    },
+    {
+      "id": "config",
+      "label": "CONFIG",
+      "x": 40,
+      "y": 76,
+      "subtitle": "Monitor",
+      "icon": "/icons/aws/management/config.png",
+      "parentId": "governance"
+    },
+    {
+      "id": "events",
+      "label": "EVENTS",
+      "x": 40,
+      "y": 326,
+      "subtitle": "Trigger",
+      "icon": "/icons/aws/integration/eventbridge.png",
+      "parentId": "governance"
+    },
+    {
+      "id": "ssm",
+      "label": "SSM",
+      "x": 40,
+      "y": 576,
+      "subtitle": "Fix",
+      "icon": "/icons/aws/management/systems-manager.png",
+      "parentId": "governance"
+    },
+    {
+      "id": "network",
+      "label": "ZERO TRUST NET",
+      "x": 600,
+      "y": 76,
+      "subtitle": "Private VPC",
+      "icon": "/icons/aws/network/vpc.png",
+      "type": "container",
+      "parentId": "aws-zone",
+      "width": 200,
+      "height": 766
+    },
+    {
+      "id": "vpc",
+      "label": "PRIVATE VPC",
+      "x": 40,
+      "y": 76,
+      "subtitle": "10.0.0.0/16",
+      "icon": "/icons/aws/network/vpc.png",
+      "parentId": "network"
+    },
+    {
+      "id": "lattice",
+      "label": "SERVICE MESH",
+      "x": 40,
+      "y": 326,
+      "subtitle": "VPC Lattice",
+      "icon": "/icons/aws/network/vpc.png",
+      "parentId": "network"
+    },
+    {
+      "id": "endpoints",
+      "label": "ENDPOINTS",
+      "x": 40,
+      "y": 576,
+      "subtitle": "Private APIs",
+      "icon": "/icons/aws/network/endpoint.png",
+      "parentId": "network"
+    },
+    {
+      "id": "k8s",
+      "label": "KUBERNETES",
+      "x": 880,
+      "y": 76,
+      "subtitle": "EKS Fargate",
+      "icon": "/icons/aws/compute/elastic-kubernetes-service.png",
+      "type": "container",
+      "parentId": "aws-zone",
+      "width": 200,
+      "height": 516
+    },
+    {
+      "id": "argocd",
+      "label": "ARGOCD",
+      "x": 40,
+      "y": 76,
+      "subtitle": "GitOps",
+      "icon": "/icons/onprem/gitops/argocd.png",
+      "parentId": "k8s"
+    },
+    {
+      "id": "apps",
+      "label": "BANKING APPS",
+      "x": 40,
+      "y": 326,
+      "subtitle": "Microservices",
+      "icon": "/icons/aws/compute/fargate.png",
+      "parentId": "k8s"
+    },
+    {
+      "id": "monitoring",
+      "label": "OBSERVABILITY",
+      "x": 1480,
+      "y": 0,
+      "subtitle": "Metrics & Logs",
+      "icon": "/icons/onprem/monitoring/prometheus.png",
+      "type": "container",
+      "width": 200,
+      "height": 766
+    },
+    {
+      "id": "prometheus",
+      "label": "PROMETHEUS",
+      "x": 40,
+      "y": 76,
+      "subtitle": "Metrics",
+      "icon": "/icons/onprem/monitoring/prometheus.png",
+      "parentId": "monitoring"
+    },
+    {
+      "id": "grafana",
+      "label": "GRAFANA",
+      "x": 40,
+      "y": 326,
+      "subtitle": "Dashboards",
+      "icon": "/icons/onprem/monitoring/grafana.png",
+      "parentId": "monitoring"
+    },
+    {
+      "id": "cloudwatch",
+      "label": "CLOUDWATCH",
+      "x": 40,
+      "y": 576,
+      "subtitle": "AWS Logs",
+      "icon": "/icons/aws/management/cloudwatch.png",
+      "parentId": "monitoring"
+    },
+    {
+      "id": "terraform",
+      "label": "TERRAFORM",
+      "x": 40,
+      "y": 846,
+      "subtitle": "Infrastructure Code",
+      "icon": "/icons/onprem/iac/terraform.png"
+    }
+  ],
+  "edges": [
+    {
+      "id": "code-policy",
+      "source": "github",
+      "target": "opa",
+      "label": "VALIDATE",
+      "color": "green",
+      "style": "solid"
+    },
+    {
+      "id": "policy-build",
+      "source": "opa",
+      "target": "cicd",
+      "label": "APPROVE",
+      "color": "green",
+      "style": "solid"
+    },
+    {
+      "id": "build-image",
+      "source": "cicd",
+      "target": "ecr",
+      "label": "PUSH",
+      "color": "green",
+      "style": "solid"
+    },
+    {
+      "id": "build-deploy",
+      "source": "cicd",
+      "target": "argocd",
+      "label": "UPDATE",
+      "color": "green",
+      "style": "solid"
+    },
+    {
+      "id": "terraform-infra",
+      "source": "terraform",
+      "target": "network",
+      "label": "PROVISION",
+      "color": "blue",
+      "style": "solid"
+    },
+    {
+      "id": "auth-k8s",
+      "source": "sso",
+      "target": "k8s",
+      "label": "AUTH",
+      "color": "purple",
+      "style": "dotted"
+    },
+    {
+      "id": "image-pull",
+      "source": "ecr",
+      "target": "apps",
+      "label": "PULL",
+      "color": "purple",
+      "style": "dotted"
+    },
+    {
+      "id": "endpoint-ecr",
+      "source": "endpoints",
+      "target": "ecr",
+      "label": "PRIVATE",
+      "color": "purple",
+      "style": "dotted"
+    },
+    {
+      "id": "deploy-apps",
+      "source": "argocd",
+      "target": "apps",
+      "label": "DEPLOY",
+      "color": "purple",
+      "style": "dotted"
+    },
+    {
+      "id": "mesh-apps",
+      "source": "lattice",
+      "target": "apps",
+      "label": "MESH",
+      "color": "purple",
+      "style": "dotted"
+    },
+    {
+      "id": "monitor-violations",
+      "source": "config",
+      "target": "events",
+      "label": "DETECT",
+      "color": "red",
+      "style": "solid"
+    },
+    {
+      "id": "trigger-fix",
+      "source": "events",
+      "target": "ssm",
+      "label": "TRIGGER",
+      "color": "red",
+      "style": "solid"
+    },
+    {
+      "id": "auto-fix",
+      "source": "ssm",
+      "target": "network",
+      "label": "FIX",
+      "color": "red",
+      "style": "solid"
+    },
+    {
+      "id": "app-metrics",
+      "source": "apps",
+      "target": "prometheus",
+      "label": "METRICS",
+      "color": "yellow",
+      "style": "dashed"
+    },
+    {
+      "id": "app-logs",
+      "source": "apps",
+      "target": "cloudwatch",
+      "label": "LOGS",
+      "color": "yellow",
+      "style": "dashed"
+    },
+    {
+      "id": "viz-data",
+      "source": "prometheus",
+      "target": "grafana",
+      "label": "VISUALIZE",
+      "color": "yellow",
+      "style": "dashed"
+    }
+  ]
+}
