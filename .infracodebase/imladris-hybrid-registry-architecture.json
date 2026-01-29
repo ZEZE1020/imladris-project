@@ -1,0 +1,204 @@
+{
+  "name": "Imladris Hybrid Registry Architecture",
+  "nodes": [
+    {
+      "id": "docker-hub",
+      "label": "DOCKER HUB",
+      "subtitle": "hub.docker.com",
+      "icon": "/icons/onprem/container/docker.png",
+      "type": "resource",
+      "x": 100,
+      "y": 100
+    },
+    {
+      "id": "github",
+      "label": "GITHUB",
+      "subtitle": "Source Code",
+      "icon": "/icons/onprem/vcs/github.png",
+      "type": "resource",
+      "x": 100,
+      "y": 350
+    },
+    {
+      "id": "aws-region",
+      "label": "AWS REGION",
+      "subtitle": "us-east-1",
+      "icon": "/icons/aws/general/region.png",
+      "type": "container",
+      "x": 400,
+      "y": 50,
+      "width": 880,
+      "height": 1420
+    },
+    {
+      "id": "vpc",
+      "label": "VPC",
+      "subtitle": "Zero Trust Network",
+      "icon": "/icons/aws/network/vpc.png",
+      "type": "container",
+      "x": 90,
+      "y": 90,
+      "width": 700,
+      "height": 1240,
+      "parentId": "aws-region"
+    },
+    {
+      "id": "private-subnet",
+      "label": "PRIVATE SUBNET",
+      "subtitle": "10.0.1.0/24",
+      "icon": "/icons/aws/network/subnet.png",
+      "type": "container",
+      "x": 90,
+      "y": 90,
+      "width": 520,
+      "height": 630,
+      "parentId": "vpc"
+    },
+    {
+      "id": "harbor",
+      "label": "HARBOR REGISTRY",
+      "subtitle": "Secure Pull-Through Cache",
+      "icon": "/icons/onprem/registry/harbor.png",
+      "type": "resource",
+      "x": 90,
+      "y": 90,
+      "parentId": "private-subnet"
+    },
+    {
+      "id": "ec2-instance",
+      "label": "EC2 INSTANCE",
+      "subtitle": "t3.large",
+      "icon": "/icons/aws/compute/ec2.png",
+      "type": "resource",
+      "x": 310,
+      "y": 90,
+      "parentId": "private-subnet"
+    },
+    {
+      "id": "codebuild",
+      "label": "CI/CD BUILD",
+      "subtitle": "CodeBuild",
+      "icon": "/icons/aws/devtools/codebuild.png",
+      "type": "resource",
+      "x": 90,
+      "y": 390,
+      "parentId": "private-subnet"
+    },
+    {
+      "id": "ecr",
+      "label": "ECR",
+      "subtitle": "Application Images",
+      "icon": "/icons/aws/compute/ec2-container-registry.png",
+      "type": "resource",
+      "x": 310,
+      "y": 390,
+      "parentId": "private-subnet"
+    },
+    {
+      "id": "fargate-subnet",
+      "label": "FARGATE SUBNET",
+      "x": 90,
+      "y": 820,
+      "subtitle": "10.0.2.0/24",
+      "icon": "/icons/aws/network/subnet.png",
+      "type": "container",
+      "width": 520,
+      "height": 330,
+      "parentId": "vpc"
+    },
+    {
+      "id": "eks-fargate",
+      "label": "EKS FARGATE",
+      "subtitle": "Banking Applications",
+      "icon": "/icons/aws/compute/fargate.png",
+      "type": "resource",
+      "x": 90,
+      "y": 90,
+      "parentId": "fargate-subnet"
+    },
+    {
+      "id": "banking-app",
+      "label": "BANKING APP",
+      "subtitle": "Production Workload",
+      "icon": "/icons/azure/compute/container.png",
+      "type": "resource",
+      "x": 310,
+      "y": 90,
+      "parentId": "fargate-subnet"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "docker-hub",
+      "target": "harbor",
+      "label": "CACHE BASE IMAGES",
+      "color": "blue"
+    },
+    {
+      "id": "e2",
+      "source": "github",
+      "target": "codebuild",
+      "label": "TRIGGER BUILD",
+      "color": "green"
+    },
+    {
+      "id": "e3",
+      "source": "harbor",
+      "target": "codebuild",
+      "label": "SECURE BASE IMAGES",
+      "color": "purple"
+    },
+    {
+      "id": "e4",
+      "source": "codebuild",
+      "target": "ecr",
+      "label": "PUSH APP IMAGES",
+      "color": "green"
+    },
+    {
+      "id": "e5",
+      "source": "ecr",
+      "target": "eks-fargate",
+      "label": "PULL FOR DEPLOYMENT",
+      "color": "green"
+    },
+    {
+      "id": "e6",
+      "source": "eks-fargate",
+      "target": "banking-app",
+      "label": "DEPLOY",
+      "color": "green"
+    },
+    {
+      "id": "e7",
+      "source": "ec2-instance",
+      "target": "harbor",
+      "label": "HOSTS",
+      "style": "dashed"
+    }
+  ],
+  "legend": {
+    "edges": [
+      {
+        "label": "Supply Chain Security",
+        "color": "blue",
+        "style": "solid"
+      },
+      {
+        "label": "CI/CD Flow",
+        "color": "green",
+        "style": "solid"
+      },
+      {
+        "label": "Secure Image Pull",
+        "color": "purple",
+        "style": "solid"
+      },
+      {
+        "label": "Infrastructure",
+        "style": "dashed"
+      }
+    ]
+  }
+}
