@@ -1,5 +1,5 @@
 # Secure Registry Module - Harbor Pull-Through Cache
-# Senior DevSecOps Architect - Supply Chain Security Implementation
+Supply Chain Security Implementation
 
 # Data source to get latest Amazon Linux 2 AMI
 data "aws_ami" "amazon_linux" {
