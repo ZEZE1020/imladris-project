@@ -18,6 +18,24 @@ module "governance" {
   vpc_id      = module.networking.vpc_id
 }
 
+# Secure Registry Module - Harbor Pull-Through Cache
+module "secure_registry" {
+  source = "./modules/secure-registry"
+
+  environment        = var.environment
+  vpc_id            = module.networking.vpc_id
+  private_subnet_ids = module.networking.private_subnet_ids
+
+  # CI/CD and build environments that need access to Harbor
+  cicd_subnet_ids  = module.networking.private_subnet_ids
+  build_subnet_ids = module.networking.private_subnet_ids
+
+  depends_on = [
+    module.networking,
+    module.governance
+  ]
+}
+
 # Compute Module - EKS Fargate Cluster
 module "compute" {
   source = "./modules/compute"
@@ -31,6 +49,7 @@ module "compute" {
 
   depends_on = [
     module.networking,
-    module.governance
+    module.governance,
+    module.secure_registry
   ]
 }

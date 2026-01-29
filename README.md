@@ -105,11 +105,19 @@ kubectl apply -f bootstrap/root.yaml
 - Encrypted in transit; TLS enforced everywhere
 - Least privilege; minimal IAM permissions
 
+### Supply Chain Validation
+- **Dependency Firewall**: All base images are sourced exclusively from the internal Harbor proxy, ensuring 100% vulnerability screening before the build process begins
+- **Critical Vulnerability Blocking**: Images with Critical CVEs are automatically blocked from being served to build environments
+- **Dependency Confusion Prevention**: Prevents 'Dependency Confusion' attacks and outages by enforcing a single, scanned entry point for all open-source libraries
+- **Offline Resilience**: Critical build dependencies are cached locally, allowing development to continue even during upstream outages
+- **Supply Chain Transparency**: Complete audit trail of all base images used in production deployments
+
 ### Automated Compliance
 - AWS Config monitors all resource changes
 - EventBridge triggers remediation on policy violations
 - SSM Automation reverts non-compliant changes
 - Continuous validation through OPA policies
+- Harbor Trivy scanner validates all cached images for known vulnerabilities
 
 ## Architecture Decisions
 
