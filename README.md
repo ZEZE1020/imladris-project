@@ -13,16 +13,22 @@ Imladris provides a secure, compliant AWS environment that:
 
 ## Platform Architecture
 
-The platform consists of four integrated components:
+The platform implements a sophisticated **Hybrid Registry Model** for complete supply chain security:
 
 ```
-Developer Code → Policy Validation → Infrastructure → Kubernetes Applications
-     GitHub          OPA/Rego         Terraform      ArgoCD Deployment
-                   (Governance)       (Platform)       (GitOps)
+Docker Hub → Harbor (Scan & Cache) → CI/CD Build → ECR → EKS Fargate
+             Supply Chain Security   Application    Deployment
+                  Firewall            Images        Registry
 ```
 
-Core layers:
-- **Infrastructure**: Terraform modules for VPC, EKS, VPC Lattice, and self-healing controls
+### Supply Chain Flow
+- **Harbor's Role**: Cache, scan, and serve public base images (from Docker Hub/Quay) to the build environment. This ensures we never pull directly from the internet during builds.
+- **ECR's Role**: Store the final, compiled application images that are deployed to EKS Fargate.
+- **Why Both?**: Harbor sanitizes the inputs (Base Images); ECR secures the outputs (App Images).
+
+### Core Architecture Layers
+- **Infrastructure**: Terraform modules for VPC, EKS, VPC Lattice, Harbor Registry, and self-healing controls
+- **Supply Chain Security**: Harbor proxy cache with vulnerability scanning for all upstream dependencies
 - **Governance**: OPA policies enforcing zero-public-access, VPC Lattice, and Fargate-only compute
 - **GitOps**: ArgoCD managing application state across Kubernetes clusters
 - **Services**: Go template for rapid development of compliant microservices
@@ -32,6 +38,7 @@ Core layers:
 ### [imladris-platform/](./imladris-platform/)
 Infrastructure as Code using Terraform. Provides:
 - Private VPC (10.0.0.0/16) with no internet gateway
+- Harbor Container Registry with secure pull-through cache for supply chain protection
 - VPC Lattice for service-to-service communication
 - EKS Fargate cluster for containerized workloads
 - AWS Config, EventBridge, and SSM for automated remediation

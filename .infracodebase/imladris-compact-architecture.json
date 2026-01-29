@@ -1,215 +1,238 @@
 {
+  "name": "Imladris Zero Trust Platform - Compact View",
   "nodes": [
     {
       "id": "dev-zone",
       "label": "DEVELOPMENT",
+      "x": 0,
+      "y": 0,
       "subtitle": "Code & Security",
       "icon": "/icons/onprem/vcs/github.png",
       "type": "container",
-      "layout": "column"
+      "width": 200,
+      "height": 766
     },
     {
       "id": "github",
       "label": "GITHUB",
+      "x": 40,
+      "y": 76,
       "subtitle": "Source Code",
       "icon": "/icons/onprem/vcs/github.png",
-      "parentNode": "dev-zone",
-      "order": 1
+      "parentId": "dev-zone"
     },
     {
       "id": "opa",
       "label": "OPA POLICIES",
+      "x": 40,
+      "y": 326,
       "subtitle": "Security Gates",
       "icon": "/icons/elastic/agent/agent.png",
-      "parentNode": "dev-zone",
-      "order": 2
+      "parentId": "dev-zone"
     },
     {
       "id": "cicd",
       "label": "CI/CD PIPELINE",
+      "x": 40,
+      "y": 576,
       "subtitle": "Build & Deploy",
       "icon": "/icons/onprem/ci/github-actions.png",
-      "parentNode": "dev-zone",
-      "order": 3
+      "parentId": "dev-zone"
     },
     {
       "id": "aws-zone",
       "label": "AWS CLOUD",
+      "x": 280,
+      "y": -58,
       "subtitle": "Zero Trust Infrastructure",
       "icon": "/icons/aws/aws.png",
       "type": "container",
-      "layout": "row",
-      "position": {
-        "relativeTo": "dev-zone",
-        "side": "right"
-      }
+      "width": 1120,
+      "height": 882
     },
     {
       "id": "identity",
       "label": "IDENTITY CENTER",
+      "x": 40,
+      "y": 76,
       "subtitle": "SSO & Auth",
       "icon": "/icons/aws/security/identity-and-access-management-iam.png",
       "type": "container",
-      "parentNode": "aws-zone",
-      "layout": "column",
-      "order": 1
+      "parentId": "aws-zone",
+      "width": 200,
+      "height": 516
     },
     {
       "id": "sso",
       "label": "SSO",
+      "x": 40,
+      "y": 76,
       "subtitle": "Access Control",
       "icon": "/icons/aws/security/identity-and-access-management-iam.png",
-      "parentNode": "identity",
-      "order": 1
+      "parentId": "identity"
     },
     {
       "id": "ecr",
       "label": "ECR",
+      "x": 40,
+      "y": 326,
       "subtitle": "Images",
       "icon": "/icons/aws/compute/ec2-container-registry.png",
-      "parentNode": "identity",
-      "order": 2
+      "parentId": "identity"
     },
     {
       "id": "governance",
       "label": "SELF-HEALING",
+      "x": 320,
+      "y": 76,
       "subtitle": "Auto Compliance",
       "icon": "/icons/aws/management/config.png",
       "type": "container",
-      "parentNode": "aws-zone",
-      "layout": "column",
-      "order": 2
+      "parentId": "aws-zone",
+      "width": 200,
+      "height": 766
     },
     {
       "id": "config",
       "label": "CONFIG",
+      "x": 40,
+      "y": 76,
       "subtitle": "Monitor",
       "icon": "/icons/aws/management/config.png",
-      "parentNode": "governance",
-      "order": 1
+      "parentId": "governance"
     },
     {
       "id": "events",
       "label": "EVENTS",
+      "x": 40,
+      "y": 326,
       "subtitle": "Trigger",
       "icon": "/icons/aws/integration/eventbridge.png",
-      "parentNode": "governance",
-      "order": 2
+      "parentId": "governance"
     },
     {
       "id": "ssm",
       "label": "SSM",
+      "x": 40,
+      "y": 576,
       "subtitle": "Fix",
       "icon": "/icons/aws/management/systems-manager.png",
-      "parentNode": "governance",
-      "order": 3
+      "parentId": "governance"
     },
     {
       "id": "network",
       "label": "ZERO TRUST NET",
+      "x": 600,
+      "y": 76,
       "subtitle": "Private VPC",
       "icon": "/icons/aws/network/vpc.png",
       "type": "container",
-      "parentNode": "aws-zone",
-      "layout": "column",
-      "order": 3
+      "parentId": "aws-zone",
+      "width": 200,
+      "height": 766
     },
     {
       "id": "vpc",
       "label": "PRIVATE VPC",
+      "x": 40,
+      "y": 76,
       "subtitle": "10.0.0.0/16",
       "icon": "/icons/aws/network/vpc.png",
-      "parentNode": "network",
-      "order": 1
+      "parentId": "network"
     },
     {
       "id": "lattice",
       "label": "SERVICE MESH",
+      "x": 40,
+      "y": 326,
       "subtitle": "VPC Lattice",
       "icon": "/icons/aws/network/vpc.png",
-      "parentNode": "network",
-      "order": 2
+      "parentId": "network"
     },
     {
       "id": "endpoints",
       "label": "ENDPOINTS",
+      "x": 40,
+      "y": 576,
       "subtitle": "Private APIs",
       "icon": "/icons/aws/network/endpoint.png",
-      "parentNode": "network",
-      "order": 3
+      "parentId": "network"
     },
     {
       "id": "k8s",
       "label": "KUBERNETES",
+      "x": 880,
+      "y": 76,
       "subtitle": "EKS Fargate",
       "icon": "/icons/aws/compute/elastic-kubernetes-service.png",
       "type": "container",
-      "parentNode": "aws-zone",
-      "layout": "column",
-      "order": 4
+      "parentId": "aws-zone",
+      "width": 200,
+      "height": 516
     },
     {
       "id": "argocd",
       "label": "ARGOCD",
+      "x": 40,
+      "y": 76,
       "subtitle": "GitOps",
       "icon": "/icons/onprem/gitops/argocd.png",
-      "parentNode": "k8s",
-      "order": 1
+      "parentId": "k8s"
     },
     {
       "id": "apps",
       "label": "BANKING APPS",
+      "x": 40,
+      "y": 326,
       "subtitle": "Microservices",
       "icon": "/icons/aws/compute/fargate.png",
-      "parentNode": "k8s",
-      "order": 2
+      "parentId": "k8s"
     },
     {
       "id": "monitoring",
       "label": "OBSERVABILITY",
+      "x": 1480,
+      "y": 0,
       "subtitle": "Metrics & Logs",
       "icon": "/icons/onprem/monitoring/prometheus.png",
       "type": "container",
-      "layout": "column",
-      "position": {
-        "relativeTo": "aws-zone",
-        "side": "right"
-      }
+      "width": 200,
+      "height": 766
     },
     {
       "id": "prometheus",
       "label": "PROMETHEUS",
+      "x": 40,
+      "y": 76,
       "subtitle": "Metrics",
       "icon": "/icons/onprem/monitoring/prometheus.png",
-      "parentNode": "monitoring",
-      "order": 1
+      "parentId": "monitoring"
     },
     {
       "id": "grafana",
       "label": "GRAFANA",
+      "x": 40,
+      "y": 326,
       "subtitle": "Dashboards",
       "icon": "/icons/onprem/monitoring/grafana.png",
-      "parentNode": "monitoring",
-      "order": 2
+      "parentId": "monitoring"
     },
     {
       "id": "cloudwatch",
       "label": "CLOUDWATCH",
+      "x": 40,
+      "y": 576,
       "subtitle": "AWS Logs",
       "icon": "/icons/aws/management/cloudwatch.png",
-      "parentNode": "monitoring",
-      "order": 3
+      "parentId": "monitoring"
     },
     {
       "id": "terraform",
       "label": "TERRAFORM",
+      "x": 40,
+      "y": 846,
       "subtitle": "Infrastructure Code",
-      "icon": "/icons/onprem/iac/terraform.png",
-      "position": {
-        "relativeTo": "dev-zone",
-        "side": "below",
-        "alignWith": "github"
-      }
+      "icon": "/icons/onprem/iac/terraform.png"
     }
   ],
   "edges": [
@@ -341,6 +364,5 @@
       "color": "yellow",
       "style": "dashed"
     }
-  ],
-  "name": "Imladris Zero Trust Platform - Compact View"
+  ]
 }

@@ -1,144 +1,157 @@
 {
+  "name": "Imladris Platform - Simplified Overview",
   "nodes": [
     {
       "id": "layer-1",
       "label": "Development & CI/CD",
+      "x": 0,
+      "y": 0,
       "subtitle": "Source Code → Security → Build → Deploy",
       "icon": "/icons/onprem/vcs/github.png",
       "type": "container",
-      "layout": "row"
+      "width": 560,
+      "height": 266
     },
     {
       "id": "layer-2",
       "label": "Policy & Governance",
+      "x": 0,
+      "y": 346,
       "subtitle": "Automated Security & Compliance",
       "icon": "/icons/elastic/agent/agent.png",
       "type": "container",
-      "layout": "row",
-      "position": {
-        "relativeTo": "layer-1",
-        "side": "below"
-      }
+      "width": 560,
+      "height": 266
     },
     {
       "id": "layer-3",
       "label": "AWS Infrastructure",
+      "x": 0,
+      "y": 692,
       "subtitle": "Zero Trust Network & Compute",
       "icon": "/icons/aws/aws.png",
       "type": "container",
-      "layout": "row",
-      "position": {
-        "relativeTo": "layer-2",
-        "side": "below"
-      }
+      "width": 560,
+      "height": 266
     },
     {
       "id": "layer-4",
       "label": "Running Applications",
+      "x": 0,
+      "y": 1038,
       "subtitle": "Banking Services & Management",
       "icon": "/icons/aws/compute/fargate.png",
       "type": "container",
-      "layout": "row",
-      "position": {
-        "relativeTo": "layer-3",
-        "side": "below"
-      }
+      "width": 560,
+      "height": 266
     },
     {
       "id": "github-simple",
       "label": "GitHub Repository",
+      "x": 40,
+      "y": 76,
       "subtitle": "Code + GitOps Manifests",
       "icon": "/icons/onprem/vcs/github.png",
-      "parentNode": "layer-1",
-      "order": 1
+      "parentId": "layer-1"
     },
     {
       "id": "actions-simple",
       "label": "GitHub Actions",
+      "x": 220,
+      "y": 76,
       "subtitle": "Secure Build Pipeline",
       "icon": "/icons/onprem/ci/github-actions.png",
-      "parentNode": "layer-1",
-      "order": 2
+      "parentId": "layer-1"
     },
     {
       "id": "terraform-simple",
       "label": "Terraform",
+      "x": 400,
+      "y": 76,
       "subtitle": "Declarative Infrastructure",
       "icon": "/icons/onprem/iac/terraform.png",
-      "parentNode": "layer-1",
-      "order": 3
+      "parentId": "layer-1"
     },
     {
       "id": "opa-simple",
       "label": "Policy Engine",
+      "x": 40,
+      "y": 76,
       "subtitle": "OPA + Conftest Validation",
       "icon": "/icons/elastic/agent/agent.png",
-      "parentNode": "layer-2",
-      "order": 1
+      "parentId": "layer-2"
     },
     {
       "id": "config-simple",
       "label": "AWS Config",
+      "x": 220,
+      "y": 76,
       "subtitle": "Resource Change Detection",
       "icon": "/icons/aws/management/config.png",
-      "parentNode": "layer-2",
-      "order": 2
+      "parentId": "layer-2"
     },
     {
       "id": "eventbridge-simple",
       "label": "EventBridge",
+      "x": 400,
+      "y": 76,
       "subtitle": "Automated Event Processing",
       "icon": "/icons/aws/integration/eventbridge.png",
-      "parentNode": "layer-2",
-      "order": 3
+      "parentId": "layer-2"
     },
     {
       "id": "vpc-simple",
       "label": "Private Network",
+      "x": 40,
+      "y": 76,
       "subtitle": "No Internet Gateway",
       "icon": "/icons/aws/network/vpc.png",
-      "parentNode": "layer-3",
-      "order": 1
+      "parentId": "layer-3"
     },
     {
       "id": "lattice-simple",
       "label": "Service Mesh",
+      "x": 220,
+      "y": 76,
       "subtitle": "IAM-Authenticated Communication",
       "icon": "/icons/aws/network/vpc.png",
-      "parentNode": "layer-3",
-      "order": 2
+      "parentId": "layer-3"
     },
     {
       "id": "eks-simple",
       "label": "Kubernetes",
+      "x": 400,
+      "y": 76,
       "subtitle": "Fargate Serverless Pods",
       "icon": "/icons/aws/compute/elastic-kubernetes-service.png",
-      "parentNode": "layer-3",
-      "order": 3
+      "parentId": "layer-3"
     },
     {
       "id": "banking-simple",
       "label": "Banking Apps",
+      "x": 40,
+      "y": 76,
       "subtitle": "Go Microservices",
       "icon": "/icons/aws/compute/fargate.png",
-      "parentNode": "layer-4",
-      "order": 1
+      "parentId": "layer-4"
     },
     {
       "id": "argocd-simple",
       "label": "GitOps Engine",
+      "x": 220,
+      "y": 76,
       "subtitle": "Continuous Deployment",
       "icon": "/icons/onprem/gitops/argocd.png",
-      "parentNode": "layer-4",
-      "order": 2
+      "parentId": "layer-4"
     },
     {
       "id": "monitoring-simple",
       "label": "Observability",
+      "x": 400,
+      "y": 76,
       "subtitle": "Prometheus + Grafana + CloudWatch",
       "icon": "/icons/onprem/monitoring/prometheus.png",
-      "parentNode": "layer-4",
-      "order": 3
+      "parentId": "layer-4"
     }
   ],
   "edges": [
@@ -214,6 +227,5 @@
       "color": "yellow",
       "style": "dashed"
     }
-  ],
-  "name": "Imladris Platform - Simplified Overview"
+  ]
 }
