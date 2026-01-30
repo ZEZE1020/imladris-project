@@ -1,5 +1,5 @@
 # Secure Registry Module - Harbor Pull-Through Cache
-Supply Chain Security Implementation
+# Supply Chain Security Implementation
 
 # Data source to get latest Amazon Linux 2 AMI
 data "aws_ami" "amazon_linux" {
@@ -145,9 +145,7 @@ resource "aws_instance" "harbor_registry" {
     }
   }
 
-  user_data = base64encode(templatefile("${path.module}/harbor-setup.sh", {
-    environment = var.environment
-  }))
+  user_data = base64encode(file("${path.module}/harbor-setup.sh"))
 
   tags = {
     Name         = "${var.environment}-harbor-registry"

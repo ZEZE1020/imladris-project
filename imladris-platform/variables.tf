@@ -32,22 +32,3 @@ variable "identity_center_instance_arn" {
   description = "AWS IAM Identity Center instance ARN"
   type        = string
 }
-
-# Harbor Secure Registry Configuration
-variable "harbor_instance_type" {
-  description = "EC2 instance type for Harbor registry"
-  type        = string
-  default     = "t3.large"
-}
-
-variable "harbor_storage_size_gb" {
-  description = "Size of encrypted EBS volume for Harbor data storage in GB"
-  type        = number
-  default     = 100
-}
-
-variable "enable_harbor_trivy_scanner" {
-  description = "Enable Trivy vulnerability scanner in Harbor"
-  type        = bool
-  default     = true
-}
