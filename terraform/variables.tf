@@ -214,11 +214,12 @@ variable "allowed_egress_cidrs" {
 }
 
 variable "blocked_egress_cidrs" {
-  description = "CIDR blocks to block for egress traffic (suspicious/malicious)"
+  description = "CIDR blocks to block for egress traffic (suspicious/malicious). Populate with threat intelligence feeds or known malicious ranges. Monitor HTTPS egress instead of blocking all traffic by default."
   type        = list(string)
   default = [
-    # Block known malicious ranges - monitor HTTPS egress instead of blocking all
-    # Examples: Add specific malicious IP ranges here as needed
+    # Example: Add specific malicious IP ranges from threat intelligence feeds
+    # "198.51.100.0/24",  # Example malicious range
+    # "203.0.113.0/24",   # Example malicious range
   ]
 }
 

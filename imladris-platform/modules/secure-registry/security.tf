@@ -83,14 +83,6 @@ resource "aws_security_group" "harbor_registry" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  egress {
-    description = "HTTPS for AWS services (ECR, S3, etc.)"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   tags = {
     Name        = "${var.environment}-harbor-registry-sg"
     Environment = var.environment
