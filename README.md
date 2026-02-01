@@ -1,158 +1,353 @@
 # Imladris: Zero Trust Banking Platform
 
-A reference Internal Developer Platform (IDP) for investment banks implementing zero trust architecture, policy-as-code governance, and automated compliance.
+[![Terraform](https://img.shields.io/badge/Terraform-1.0+-purple.svg)](https://www.terraform.io/)
+[![AWS](https://img.shields.io/badge/AWS-EKS%20%7C%20VPC%20Lattice-orange.svg)](https://aws.amazon.com/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![OPA](https://img.shields.io/badge/Policy-OPA%2FRego-green.svg)](https://www.openpolicyagent.org/)
 
-## Overview
+A production-grade **Internal Developer Platform (IDP)** reference architecture for investment banks, implementing zero-trust networking, policy-as-code governance, and automated compliance on AWS.
 
-Imladris provides a secure, compliant AWS environment that:
+---
 
-- Eliminates VPNs with zero-trust networking via VPC Lattice
-- Enforces immutable infrastructure using EKS Fargate exclusively
-- Automates security remediation using AWS Config, EventBridge, and SSM
-- Validates all changes through policy-as-code before deployment
-- **NEW**: Secures the software supply chain with Harbor container registry and vulnerability scanning
+## 🎯 Project Overview
 
-## What's New: Supply Chain Security
+**Imladris** (named after the hidden Elven refuge in Tolkien's universe) provides a secure, compliant AWS environment designed for financial services organizations requiring:
 
-🚀 **Latest Enhancement**: We've added a **Harbor-based Secure Pull-Through Cache** that creates an impenetrable defense against supply chain attacks while maintaining developer velocity.
+- **Zero Trust Architecture** — No VPNs, no public endpoints, IAM-based access everywhere
+- **Immutable Infrastructure** — EKS Fargate exclusively, no persistent EC2 instances
+- **Policy-as-Code** — All changes validated through OPA/Rego before deployment
+- **Automated Remediation** — Self-healing infrastructure via AWS Config + EventBridge + SSM
+- **GitOps Workflows** — Declarative state management with ArgoCD
 
-**Key Benefits:**
-- ✅ **Zero Internet Builds**: Build processes never directly access public registries
-- ✅ **Critical CVE Blocking**: Automatic rejection of vulnerable base images
-- ✅ **Banking Compliance**: Complete audit trail for regulatory requirements
-- ✅ **Offline Resilience**: Local caching eliminates external dependencies
+### Target Audience
 
-## Platform Architecture
+| Role | Value Proposition |
+|------|------------------|
+| **Platform Engineers** | Production-ready IDP with modular Terraform |
+| **Security Engineers** | Zero-trust implementation with policy enforcement |
+| **DevOps Engineers** | GitOps patterns with automated compliance |
+| **Solutions Architects** | Reference architecture for regulated industries |
 
-The platform consists of four integrated components with **enhanced supply chain security**:
+---
+
+## 🏗️ Architecture
+
+### High-Level Overview
 
 ```
-Developer Code → Policy Validation → Infrastructure → Kubernetes Applications
-     GitHub          OPA/Rego         Terraform      ArgoCD Deployment
-                   (Governance)       (Platform)       (GitOps)
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           IMLADRIS PLATFORM                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   Developer → GitHub → Policy Gate → Terraform → AWS → Kubernetes → Service │
+│                           (OPA)       (IaC)     (Infra)  (ArgoCD)   (App)   │
+│                                                                              │
+├──────────────┬──────────────┬──────────────┬──────────────┬─────────────────┤
+│  GOVERNANCE  │  NETWORKING  │   COMPUTE    │   GITOPS     │    SERVICES     │
+├──────────────┼──────────────┼──────────────┼──────────────┼─────────────────┤
+│ • OPA/Rego   │ • VPC Lattice│ • EKS Fargate│ • ArgoCD     │ • Go Template   │
+│ • Conftest   │ • Private VPC│ • No EC2     │ • App-of-Apps│ • Distroless    │
+│ • AWS Config │ • No IGW     │ • KMS Encrypt│ • Auto-Sync  │ • Prometheus    │
+│ • EventBridge│ • VPC Endpts │ • IAM IRSA   │ • Self-Heal  │ • Health Checks │
+└──────────────┴──────────────┴──────────────┴──────────────┴─────────────────┘
 ```
 
-### Enhanced Supply Chain Security (NEW)
-We've added a **Hybrid Registry Model** that creates a secure firewall for all container dependencies:
+### Zero Trust Network Design
 
 ```
-Docker Hub → Harbor (Scan & Cache) → CI/CD Build → ECR → EKS Fargate
-             Supply Chain Security   Application    Deployment
-                  Firewall            Images        Registry
+┌─────────────────────────────────────────────────────────────────┐
+│                     AWS ACCOUNT                                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                  VPC (10.0.0.0/16)                         │  │
+│  │                  ❌ No Internet Gateway                    │  │
+│  │                  ❌ No NAT Gateway                         │  │
+│  │                  ❌ No Public Subnets                      │  │
+│  │                                                            │  │
+│  │   ┌─────────────────────────────────────────────────────┐ │  │
+│  │   │              PRIVATE SUBNETS ONLY                    │ │  │
+│  │   │  ┌─────────┐  ┌─────────┐  ┌─────────┐             │ │  │
+│  │   │  │ EKS     │  │ EKS     │  │ EKS     │             │ │  │
+│  │   │  │ Fargate │  │ Fargate │  │ Fargate │             │ │  │
+│  │   │  │ (AZ-1a) │  │ (AZ-1b) │  │ (AZ-1c) │             │ │  │
+│  │   │  └────┬────┘  └────┬────┘  └────┬────┘             │ │  │
+│  │   │       │            │            │                   │ │  │
+│  │   │       └────────────┼────────────┘                   │ │  │
+│  │   │                    │                                │ │  │
+│  │   │            ┌───────▼───────┐                        │ │  │
+│  │   │            │  VPC LATTICE  │ ← Service Mesh         │ │  │
+│  │   │            │  (IAM Auth)   │                        │ │  │
+│  │   │            └───────────────┘                        │ │  │
+│  │   └─────────────────────────────────────────────────────┘ │  │
+│  │                                                            │  │
+│  │   ┌─────────────────────────────────────────────────────┐ │  │
+│  │   │              VPC ENDPOINTS                           │ │  │
+│  │   │  • S3 (Gateway)    • ECR API      • ECR Docker      │ │  │
+│  │   │  • EKS             • CloudWatch   • SSM             │ │  │
+│  │   └─────────────────────────────────────────────────────┘ │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**How it works:**
-- **Harbor's Role**: Cache, scan, and serve public base images (from Docker Hub/Quay) to the build environment. This ensures we never pull directly from the internet during builds.
-- **ECR's Role**: Store the final, compiled application images that are deployed to EKS Fargate.
-- **Why Both?**: Harbor sanitizes the inputs (Base Images); ECR secures the outputs (App Images).
+---
 
-### Core Architecture Layers
-- **Infrastructure**: Terraform modules for VPC, EKS, VPC Lattice, and self-healing controls
-- **Supply Chain Security**: NEW - Harbor proxy cache with vulnerability scanning for all upstream dependencies
-- **Governance**: OPA policies enforcing zero-public-access, VPC Lattice, and Fargate-only compute
-- **GitOps**: ArgoCD managing application state across Kubernetes clusters
-- **Services**: Go template for rapid development of compliant microservices
+## 📁 Repository Structure
 
-## Repository Structure
+```
+imladris-project/
+├── README.md                    # This file
+├── docs/                        # Documentation
+│   ├── DEPLOYMENT.md           # Deployment procedures
+│   ├── architecture/           # Architecture decisions
+│   │   └── RBAC-DESIGN.md     # RBAC design document
+│   └── setup/                  # Setup guides
+│       ├── SETUP.md           # Complete setup instructions
+│       └── AWS-SETUP-GUIDE.md # AWS-specific setup
+│
+├── imladris-platform/          # 🏗️ Infrastructure as Code
+│   ├── main.tf                # Root module composition
+│   ├── variables.tf           # Input variables
+│   ├── outputs.tf             # Output values
+│   └── modules/
+│       ├── networking/        # VPC, Lattice, Endpoints
+│       ├── compute/           # EKS Fargate, IAM
+│       ├── governance/        # Config, EventBridge, SSM
+│       └── secure-registry/   # Harbor (optional)
+│
+├── imladris-governance/        # 📜 Policy as Code
+│   ├── conftest.yaml          # Conftest configuration
+│   └── policies/
+│       └── terraform/         # Terraform plan policies
+│           ├── deny-public-ingress.rego
+│           ├── enforce-fargate.rego
+│           └── require-vpc-lattice.rego
+│
+├── imladris-gitops/            # 🔄 GitOps Configuration
+│   ├── bootstrap/
+│   │   └── root.yaml          # App-of-apps root
+│   ├── infrastructure/        # Platform components
+│   └── tenants/               # Application namespaces
+│       └── banking-core/      # Sample tenant
+│
+├── imladris-service-template/  # 🚀 Service Starter Kit
+│   ├── main.go                # Go HTTP server
+│   ├── Dockerfile             # Distroless container
+│   └── k8s/                   # Kubernetes manifests
+│
+├── terraform/                  # 🔐 Security Engine (Optional)
+│   └── eks-cilium-tetragon.tf # eBPF runtime security
+│
+├── lambda/                     # ⚡ Serverless Functions
+│   └── drift_enforcement_lambda.py
+│
+└── k8s/                        # ☸️ Kubernetes Policies
+    ├── fluent-bit/            # Logging configuration
+    └── tetragon-policies/     # eBPF security policies
+```
 
-### [imladris-platform/](./imladris-platform/)
-Infrastructure as Code using Terraform. Provides:
-- Private VPC (10.0.0.0/16) with no internet gateway
-- VPC Lattice for service-to-service communication
-- EKS Fargate cluster for containerized workloads
-- **NEW**: Harbor Container Registry with secure pull-through cache for supply chain protection
-- AWS Config, EventBridge, and SSM for automated remediation
-- IAM Identity Center for centralized access control
+---
 
-### [imladris-governance/](./imladris-governance/)
-Policy-as-Code using OPA and Conftest. Enforces:
-- No public ingress (blocks 0.0.0.0/0 access on all ports)
-- VPC Lattice mandatory for service communication
-- Fargate-only compute for application workloads (Harbor registry EC2 instance is exempted for supply chain security)
-- HTTPS encryption for all listeners
+## 🔑 Key Design Decisions
 
-### [imladris-gitops/](./imladris-gitops/)
-GitOps configuration using ArgoCD. Manages:
-- App-of-apps pattern for centralized deployment
-- Tenant namespaces (banking-core, platform, monitoring)
-- Network policies with default-deny rules
-- VPC Lattice service mesh integration
+### 1. Why VPC Lattice over Service Mesh?
 
-### [imladris-service-template/](./imladris-service-template/)
-Production-ready service template in Go. Includes:
-- HTTP server with health check endpoints
-- Prometheus metrics export
-- Kubernetes manifests and CI/CD pipeline
-- Distroless container with non-root execution
-- VPC Lattice integration ready
+| Consideration | VPC Lattice | Istio/Linkerd |
+|--------------|-------------|---------------|
+| **Infrastructure** | AWS-managed, zero pods | Sidecar per pod |
+| **IAM Integration** | Native | Requires custom setup |
+| **Operational Overhead** | Minimal | High |
+| **Cost** | Pay per request | Compute for sidecars |
+| **Banking Fit** | ✅ AWS-native compliance | ⚠️ Additional audit scope |
 
-## Quick Start
+**Decision**: VPC Lattice provides service mesh capabilities with native IAM authentication and zero operational overhead.
 
-See [SETUP.md](./SETUP.md) for complete setup instructions.
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for deployment procedures.
+### 2. Why Fargate-Only (No EC2)?
+
+| Consideration | Fargate | EC2 Node Groups |
+|--------------|---------|-----------------|
+| **Patching** | AWS-managed | Customer responsibility |
+| **SSH Access** | Impossible | Possible attack vector |
+| **Compliance** | Simplified | Additional controls needed |
+| **Blast Radius** | Pod-level isolation | Node-level sharing |
+| **Cost Predictability** | Per-pod | Capacity planning needed |
+
+**Decision**: Fargate eliminates persistent compute, reducing attack surface and compliance scope.
+
+### 3. Why OPA/Rego for Policy?
+
+| Consideration | OPA/Conftest | Sentinel | CloudFormation Guard |
+|--------------|--------------|----------|---------------------|
+| **Vendor Lock-in** | None | HashiCorp | AWS |
+| **Language** | Rego (declarative) | Sentinel | YAML-like |
+| **Ecosystem** | Broad (K8s, Terraform, etc.) | Terraform only | CloudFormation only |
+| **Testing** | Built-in | Limited | Basic |
+
+**Decision**: OPA provides vendor-neutral, testable policies across the entire stack.
+
+### 4. Why GitOps with ArgoCD?
+
+| Consideration | ArgoCD | Flux | Jenkins |
+|--------------|--------|------|---------|
+| **Audit Trail** | Git history | Git history | Build logs |
+| **Drift Detection** | Continuous | Continuous | Manual |
+| **Rollback** | Git revert | Git revert | Rebuild |
+| **UI** | Rich dashboard | CLI-focused | Complex |
+| **Multi-tenancy** | Projects/RBAC | Namespaces | Folders |
+
+**Decision**: ArgoCD provides enterprise features with strong multi-tenant support.
+
+---
+
+## 🛡️ Security Model
+
+### Zero Trust Principles Applied
+
+| Principle | Implementation |
+|-----------|---------------|
+| **Never Trust, Always Verify** | IAM authentication on all service calls via VPC Lattice |
+| **Least Privilege** | Minimal IAM policies, no wildcards |
+| **Assume Breach** | Network segmentation, no lateral movement |
+| **Verify Explicitly** | mTLS everywhere, no plaintext |
+| **Limit Blast Radius** | Fargate pod isolation, namespace separation |
+
+### Automated Compliance Pipeline
+
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│   Terraform  │───▶│   Conftest   │───▶│  AWS Config  │───▶│  EventBridge │
+│    Plan      │    │  (Pre-Apply) │    │ (Post-Apply) │    │   (Detect)   │
+└──────────────┘    └──────────────┘    └──────────────┘    └──────┬───────┘
+                                                                    │
+                    ┌──────────────┐    ┌──────────────┐           │
+                    │    Alert     │◀───│     SSM      │◀──────────┘
+                    │   (SNS)      │    │  (Remediate) │
+                    └──────────────┘    └──────────────┘
+```
+
+### Policies Enforced
+
+| Policy | Description | Enforcement |
+|--------|-------------|-------------|
+| `deny-public-ingress` | Block 0.0.0.0/0 on all ports | Pre-apply (Conftest) |
+| `enforce-fargate` | No EC2 instances allowed | Pre-apply (Conftest) |
+| `require-vpc-lattice` | Services must use Lattice | Pre-apply (Conftest) |
+| `restricted-ssh` | No SSH security group rules | Post-apply (AWS Config) |
+| `s3-public-read` | No public S3 buckets | Post-apply (AWS Config) |
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Terraform >= 1.0
-- AWS CLI >= 2.31
-- kubectl >= 1.28
-- Conftest >= 0.46
+| Tool | Version | Purpose |
+|------|---------|---------|
+| Terraform | >= 1.0 | Infrastructure provisioning |
+| AWS CLI | >= 2.31 | AWS authentication |
+| kubectl | >= 1.28 | Kubernetes management |
+| Conftest | >= 0.46 | Policy validation |
 
-### Basic Deployment
+### Deployment
 
 ```bash
-# Configure and deploy infrastructure
+# 1. Clone repository
+git clone https://github.com/ZEZE1020/imladris-project.git
+cd imladris-project
+
+# 2. Configure AWS credentials
+aws configure
+
+# 3. Deploy infrastructure
 cd imladris-platform
 cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your values
+
 terraform init
 terraform plan
 terraform apply
 
-# Configure kubectl
-aws eks update-kubeconfig --region us-east-1 --name imladris-cluster
+# 4. Configure kubectl
+aws eks update-kubeconfig --region us-east-1 --name imladris-demo-cluster
 
-# Deploy GitOps
+# 5. Deploy GitOps
 cd ../imladris-gitops
 kubectl apply -f bootstrap/root.yaml
 ```
 
-## Security Model
+### Validate Policies
 
-### Zero Trust Principles
-- No VPN access; all access through IAM Identity Center
-- No public endpoints; VPC Lattice handles all service communication
-- No SSH access; containers are immutable
-- Encrypted in transit; TLS enforced everywhere
-- Least privilege; minimal IAM permissions
+```bash
+# Generate Terraform plan
+cd imladris-platform
+terraform plan -out=tfplan
+terraform show -json tfplan > tfplan.json
 
-### Supply Chain Validation (NEW SECURITY LAYER)
-- **Dependency Firewall**: All base images are sourced exclusively from the internal Harbor proxy, ensuring 100% vulnerability screening before the build process begins
-- **Critical Vulnerability Blocking**: Images with Critical CVEs are automatically blocked from being served to build environments
-- **Dependency Confusion Prevention**: Prevents 'Dependency Confusion' attacks and outages by enforcing a single, scanned entry point for all open-source libraries
-- **Offline Resilience**: Critical build dependencies are cached locally, allowing development to continue even during upstream outages
-- **Supply Chain Transparency**: Complete audit trail of all base images used in production deployments
+# Run policy checks
+cd ../imladris-governance
+conftest test ../imladris-platform/tfplan.json -p policies/terraform/
+```
 
-### Automated Compliance
-- AWS Config monitors all resource changes
-- EventBridge triggers remediation on policy violations
-- SSM Automation reverts non-compliant changes
-- Continuous validation through OPA policies
-- **NEW**: Harbor Trivy scanner validates all cached images for known vulnerabilities
+---
 
-## Architecture Decisions
+## 💰 Cost Estimation
 
-### Why VPC Lattice?
-AWS-native service mesh with IAM integration, no additional infrastructure required.
+### Monthly Costs (Approximate)
 
-### Why Fargate?
-Immutable compute eliminates persistent state vulnerability, managed patching by AWS.
+| Service | Configuration | Monthly Cost |
+|---------|--------------|--------------|
+| EKS Control Plane | 1 cluster | $73 |
+| EKS Fargate | 3 pods (0.5 vCPU, 1GB) | $30-50 |
+| VPC Endpoints | 5 Interface × 3 AZs | $110 |
+| VPC Lattice | Service Network + Services | $50 |
+| CloudWatch | Logs + Metrics | $10-20 |
+| S3 | Config + Logs | $5 |
+| KMS | 2 keys | $2 |
 
-### Why GitOps?
-Git audit trail, drift detection, simple rollback, no external access to cluster.
+**Total Estimate**: **$280-350/month**
 
-### Why Harbor Secure Registry? (NEW)
-Investment banking requires complete control over the software supply chain. Harbor provides:
-- **Zero Internet Dependencies**: Build processes never touch public registries directly
-- **Banking Compliance**: Complete audit trail of all base images for regulatory reporting
-- **Vulnerability Prevention**: Critical CVE blocking prevents compromised images from entering production
-- **Operational Resilience**: Local caching eliminates dependency on external service availability
+> 💡 For demos: Deploy, record, destroy within 1 hour = ~$2-5
+
+---
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Setup Guide](docs/setup/SETUP.md) | Complete installation instructions |
+| [AWS Setup](docs/setup/AWS-SETUP-GUIDE.md) | AWS-specific configuration |
+| [Deployment](docs/DEPLOYMENT.md) | Deployment procedures |
+| [RBAC Design](docs/architecture/RBAC-DESIGN.md) | Access control architecture |
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please read our contributing guidelines before submitting PRs.
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Run policy checks (`conftest test`)
+4. Run `terraform validate`
+5. Commit changes (`git commit -m 'feat: add amazing feature'`)
+6. Push to branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- AWS Well-Architected Framework
+- NIST Zero Trust Architecture (SP 800-207)
+- Open Policy Agent community
+- ArgoCD project
+
+---
+
+<p align="center">
+  <b>Built for the financial services industry where security is not optional.</b>
+</p>
