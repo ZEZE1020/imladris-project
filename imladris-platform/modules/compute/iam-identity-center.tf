@@ -114,6 +114,7 @@ resource "aws_identitystore_user" "frontend_developer" {
 
 # 1. FinOps Analyst Permission Set
 resource "aws_ssoadmin_permission_set" "finops_analyst" {
+  count            = var.enable_identity_center_permission_sets ? 1 : 0
   instance_arn     = local.identity_center_instance_arn
   name             = "ImladrisFinOpsAnalyst"
   description      = "Financial operations and cost management"
@@ -127,8 +128,9 @@ resource "aws_ssoadmin_permission_set" "finops_analyst" {
 
 # FinOps Policy - Cost Management and Read-Only Access
 resource "aws_ssoadmin_permission_set_inline_policy" "finops_policy" {
+  count              = var.enable_identity_center_permission_sets ? 1 : 0
   instance_arn       = local.identity_center_instance_arn
-  permission_set_arn = aws_ssoadmin_permission_set.finops_analyst.arn
+  permission_set_arn = aws_ssoadmin_permission_set.finops_analyst[0].arn
   
   inline_policy = jsonencode({
     Version = "2012-10-17"
@@ -181,6 +183,7 @@ resource "aws_ssoadmin_permission_set_inline_policy" "finops_policy" {
 
 # 2. Senior DevOps Permission Set
 resource "aws_ssoadmin_permission_set" "senior_devops" {
+  count            = var.enable_identity_center_permission_sets ? 1 : 0
   instance_arn     = local.identity_center_instance_arn
   name             = "ImladrisSeniorDevOps"
   description      = "Full platform management and infrastructure deployment"
@@ -194,8 +197,9 @@ resource "aws_ssoadmin_permission_set" "senior_devops" {
 
 # Senior DevOps Policy - Full Infrastructure Access
 resource "aws_ssoadmin_permission_set_inline_policy" "senior_devops_policy" {
+  count              = var.enable_identity_center_permission_sets ? 1 : 0
   instance_arn       = local.identity_center_instance_arn
-  permission_set_arn = aws_ssoadmin_permission_set.senior_devops.arn
+  permission_set_arn = aws_ssoadmin_permission_set.senior_devops[0].arn
   
   inline_policy = jsonencode({
     Version = "2012-10-17"
@@ -239,6 +243,7 @@ resource "aws_ssoadmin_permission_set_inline_policy" "senior_devops_policy" {
 
 # 3. Junior DevOps Permission Set
 resource "aws_ssoadmin_permission_set" "junior_devops" {
+  count            = var.enable_identity_center_permission_sets ? 1 : 0
   instance_arn     = local.identity_center_instance_arn
   name             = "ImladrisJuniorDevOps"
   description      = "Monitoring and limited infrastructure access"
@@ -252,8 +257,9 @@ resource "aws_ssoadmin_permission_set" "junior_devops" {
 
 # Junior DevOps Policy - Read-Only + Monitoring
 resource "aws_ssoadmin_permission_set_inline_policy" "junior_devops_policy" {
+  count              = var.enable_identity_center_permission_sets ? 1 : 0
   instance_arn       = local.identity_center_instance_arn
-  permission_set_arn = aws_ssoadmin_permission_set.junior_devops.arn
+  permission_set_arn = aws_ssoadmin_permission_set.junior_devops[0].arn
   
   inline_policy = jsonencode({
     Version = "2012-10-17"
@@ -293,6 +299,7 @@ resource "aws_ssoadmin_permission_set_inline_policy" "junior_devops_policy" {
 
 # 4. Backend Developer Permission Set
 resource "aws_ssoadmin_permission_set" "backend_developer" {
+  count            = var.enable_identity_center_permission_sets ? 1 : 0
   instance_arn     = local.identity_center_instance_arn
   name             = "ImladrisBackendDeveloper"
   description      = "Banking service development and deployment"
@@ -306,8 +313,9 @@ resource "aws_ssoadmin_permission_set" "backend_developer" {
 
 # Backend Developer Policy - Application Deployment
 resource "aws_ssoadmin_permission_set_inline_policy" "backend_developer_policy" {
+  count              = var.enable_identity_center_permission_sets ? 1 : 0
   instance_arn       = local.identity_center_instance_arn
-  permission_set_arn = aws_ssoadmin_permission_set.backend_developer.arn
+  permission_set_arn = aws_ssoadmin_permission_set.backend_developer[0].arn
   
   inline_policy = jsonencode({
     Version = "2012-10-17"
@@ -355,6 +363,7 @@ resource "aws_ssoadmin_permission_set_inline_policy" "backend_developer_policy" 
 
 # 5. Frontend Developer Permission Set
 resource "aws_ssoadmin_permission_set" "frontend_developer" {
+  count            = var.enable_identity_center_permission_sets ? 1 : 0
   instance_arn     = local.identity_center_instance_arn
   name             = "ImladrisFrontendDeveloper"
   description      = "Frontend development and UI services"
@@ -368,8 +377,9 @@ resource "aws_ssoadmin_permission_set" "frontend_developer" {
 
 # Frontend Developer Policy - UI Application Deployment
 resource "aws_ssoadmin_permission_set_inline_policy" "frontend_developer_policy" {
+  count              = var.enable_identity_center_permission_sets ? 1 : 0
   instance_arn       = local.identity_center_instance_arn
-  permission_set_arn = aws_ssoadmin_permission_set.frontend_developer.arn
+  permission_set_arn = aws_ssoadmin_permission_set.frontend_developer[0].arn
   
   inline_policy = jsonencode({
     Version = "2012-10-17"
@@ -422,8 +432,9 @@ data "aws_caller_identity" "current" {}
 
 # Assign FinOps Analyst
 resource "aws_ssoadmin_account_assignment" "finops_assignment" {
+  count              = var.enable_identity_center_permission_sets ? 1 : 0
   instance_arn       = local.identity_center_instance_arn
-  permission_set_arn = aws_ssoadmin_permission_set.finops_analyst.arn
+  permission_set_arn = aws_ssoadmin_permission_set.finops_analyst[0].arn
   
   principal_id   = aws_identitystore_user.finops_analyst.user_id
   principal_type = "USER"
@@ -434,8 +445,9 @@ resource "aws_ssoadmin_account_assignment" "finops_assignment" {
 
 # Assign Senior DevOps
 resource "aws_ssoadmin_account_assignment" "senior_devops_assignment" {
+  count              = var.enable_identity_center_permission_sets ? 1 : 0
   instance_arn       = local.identity_center_instance_arn
-  permission_set_arn = aws_ssoadmin_permission_set.senior_devops.arn
+  permission_set_arn = aws_ssoadmin_permission_set.senior_devops[0].arn
   
   principal_id   = aws_identitystore_user.senior_devops.user_id
   principal_type = "USER"
@@ -446,8 +458,9 @@ resource "aws_ssoadmin_account_assignment" "senior_devops_assignment" {
 
 # Assign Junior DevOps
 resource "aws_ssoadmin_account_assignment" "junior_devops_assignment" {
+  count              = var.enable_identity_center_permission_sets ? 1 : 0
   instance_arn       = local.identity_center_instance_arn
-  permission_set_arn = aws_ssoadmin_permission_set.junior_devops.arn
+  permission_set_arn = aws_ssoadmin_permission_set.junior_devops[0].arn
   
   principal_id   = aws_identitystore_user.junior_devops.user_id
   principal_type = "USER"
@@ -458,8 +471,9 @@ resource "aws_ssoadmin_account_assignment" "junior_devops_assignment" {
 
 # Assign Backend Developer
 resource "aws_ssoadmin_account_assignment" "backend_developer_assignment" {
+  count              = var.enable_identity_center_permission_sets ? 1 : 0
   instance_arn       = local.identity_center_instance_arn
-  permission_set_arn = aws_ssoadmin_permission_set.backend_developer.arn
+  permission_set_arn = aws_ssoadmin_permission_set.backend_developer[0].arn
   
   principal_id   = aws_identitystore_user.backend_developer.user_id
   principal_type = "USER"
@@ -470,8 +484,9 @@ resource "aws_ssoadmin_account_assignment" "backend_developer_assignment" {
 
 # Assign Frontend Developer
 resource "aws_ssoadmin_account_assignment" "frontend_developer_assignment" {
+  count              = var.enable_identity_center_permission_sets ? 1 : 0
   instance_arn       = local.identity_center_instance_arn
-  permission_set_arn = aws_ssoadmin_permission_set.frontend_developer.arn
+  permission_set_arn = aws_ssoadmin_permission_set.frontend_developer[0].arn
   
   principal_id   = aws_identitystore_user.frontend_developer.user_id
   principal_type = "USER"

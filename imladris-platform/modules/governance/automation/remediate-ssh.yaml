@@ -31,34 +31,27 @@ mainSteps:
 
   - name: RemediateSecurityGroup
     action: 'aws:executeAwsApi'
-    description: 'Remove SSH ingress rules from security group'
+    description: 'Revoke SSH ingress rules from security group'
     inputs:
       Service: ec2
-      Api: AuthorizeSecurityGroupIngress
+      Api: RevokeSecurityGroupIngress
       GroupId: '{{ resourceId }}'
       IpPermissions:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           IpRanges:
-            - CidrIp: 0.0.0.0/0
-              Description: 'Removed by Imladris Auto-Remediation'
+            - CidrIp: '0.0.0.0/0'
+    outputs:
+      - Name: RevokeResult
+        Selector: $.Return
+        Type: Boolean
     isEnd: true
-    onFailure: Abort
+    onFailure: Continue
 
   - name: LogUnsupportedResource
-    action: 'aws:executeAwsApi'
-    description: 'Log unsupported resource type for manual review'
+    action: 'aws:sleep'
+    description: 'Pause before logging unsupported resource type'
     inputs:
-      Service: logs
-      Api: PutLogEvents
-      logGroupName: '/aws/ssm/imladris-remediation'
-      logStreamName: 'unsupported-resources'
-      logEvents:
-        - timestamp: '{{ global:DATE_TIME }}'
-          message: 'Unsupported resource type {{ resourceType }} with ID {{ resourceId }} requires manual remediation'
+      Duration: PT1S
     isEnd: true
-
-outputs:
-  - RemediateSecurityGroup.ResponseMetadata
-  - LogUnsupportedResource.ResponseMetadata

@@ -476,7 +476,7 @@ resource "aws_config_config_rule" "root_access_key_check" {
 
   source {
     owner             = "AWS"
-    source_identifier = "ROOT_ACCESS_KEY_CHECK"
+    source_identifier = "IAM_ROOT_ACCESS_KEY_CHECK"
   }
 
   depends_on = [aws_config_configuration_recorder.recorder]

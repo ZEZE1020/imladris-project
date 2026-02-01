@@ -5,6 +5,7 @@
 resource "aws_config_configuration_recorder_status" "recorder" {
   name       = aws_config_configuration_recorder.recorder.name
   is_enabled = true
+
   depends_on = [aws_config_delivery_channel.main]
 }
 
@@ -17,7 +18,7 @@ resource "aws_config_configuration_recorder" "recorder" {
     include_global_resource_types = true
   }
 
-  depends_on = [aws_config_delivery_channel.main]
+  depends_on = [aws_iam_role_policy_attachment.config_role_policy]
 }
 
 # S3 Bucket for Config
@@ -91,6 +92,12 @@ resource "aws_s3_bucket_policy" "config_bucket_policy" {
 resource "aws_config_delivery_channel" "main" {
   name           = "imladris-${var.environment}-delivery-channel"
   s3_bucket_name = aws_s3_bucket.config.id
+
+  depends_on = [
+    aws_s3_bucket_policy.config_bucket_policy,
+    aws_iam_role.config_role,
+    aws_config_configuration_recorder.recorder
+  ]
 }
 
 # AWS Config Rule - Restricted SSH
@@ -184,7 +191,7 @@ resource "aws_iam_role" "config_role" {
 
 resource "aws_iam_role_policy_attachment" "config_role_policy" {
   role       = aws_iam_role.config_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/ConfigRole"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWS_ConfigRole"
 }
 
 # IAM Role for EventBridge

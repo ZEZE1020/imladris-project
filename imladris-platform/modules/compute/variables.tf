@@ -27,3 +27,9 @@ variable "identity_center_instance_arn" {
   description = "AWS IAM Identity Center instance ARN"
   type        = string
 }
+
+variable "enable_identity_center_permission_sets" {
+  description = "Enable IAM Identity Center permission sets (requires organization-level Identity Center)"
+  type        = bool
+  default     = false
+}
