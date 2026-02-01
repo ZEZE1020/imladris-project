@@ -2,9 +2,13 @@
 # Zero Trust Banking Platform
 
 # ===== RUNTIME SECURITY =====
+# Note: Kubernetes resources require deploy_k8s_resources = true
+# Deploy these AFTER the EKS cluster is created (Phase 2)
 
 # Falco for Runtime Threat Detection
 resource "kubernetes_namespace_v1" "falco_system" {
+  count = var.deploy_k8s_resources ? 1 : 0
+
   metadata {
     name = "falco-system"
     labels = {
@@ -17,6 +21,7 @@ resource "kubernetes_namespace_v1" "falco_system" {
 
 # Falco DaemonSet for Runtime Security
 resource "kubernetes_manifest" "falco_daemonset" {
+  count = var.deploy_k8s_resources ? 1 : 0
   manifest = {
     apiVersion = "apps/v1"
     kind       = "DaemonSet"

@@ -14,8 +14,9 @@ module "networking" {
 module "governance" {
   source = "./modules/governance"
 
-  environment = var.environment
-  vpc_id      = module.networking.vpc_id
+  environment          = var.environment
+  vpc_id               = module.networking.vpc_id
+  deploy_k8s_resources = false  # Set to true after EKS cluster is created (Phase 2)
 }
 
 # Secure Registry Module - Harbor Pull-Through Cache (DISABLED - conflicts with Fargate-only policy)
