@@ -52,3 +52,5 @@ sbom.spdx.json
 
 # Logs
 *.log
+
+tfvenv

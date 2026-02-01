@@ -50,21 +50,13 @@ resource "aws_security_group" "harbor_registry" {
     }
   }
 
-  # Outbound rules for Harbor functionality
+  # Outbound rules for Harbor functionality - Use VPC endpoints instead of internet
   egress {
-    description = "HTTPS to Docker Hub for image pulls"
+    description = "HTTPS to VPC endpoints for AWS services"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    description = "HTTP to Docker Hub for image pulls"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["10.0.0.0/16"]  # VPC CIDR only
   }
 
   egress {
@@ -81,6 +73,7 @@ resource "aws_security_group" "harbor_registry" {
     to_port     = 123
     protocol    = "udp"
     cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["10.0.0.0/16"]  # VPC CIDR only
   }
 
   tags = {
@@ -156,67 +149,6 @@ resource "aws_network_acl" "harbor_registry" {
     Name        = "${var.environment}-harbor-registry-nacl"
     Environment = var.environment
     Purpose     = "SecureRegistryNetworkAccess"
-  }
-}
-
-# VPC Endpoint for ECR to avoid internet traffic for AWS ECR access
-resource "aws_vpc_endpoint" "ecr_api" {
-  vpc_id              = var.vpc_id
-  service_name        = "com.amazonaws.${data.aws_region.current.name}.ecr.api"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = [var.private_subnet_ids[0]]
-  security_group_ids  = [aws_security_group.vpc_endpoint.id]
-  private_dns_enabled = true
-
-  tags = {
-    Name        = "${var.environment}-ecr-api-endpoint"
-    Environment = var.environment
-    Purpose     = "SecureECRAccess"
-  }
-}
-
-resource "aws_vpc_endpoint" "ecr_dkr" {
-  vpc_id              = var.vpc_id
-  service_name        = "com.amazonaws.${data.aws_region.current.name}.ecr.dkr"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = [var.private_subnet_ids[0]]
-  security_group_ids  = [aws_security_group.vpc_endpoint.id]
-  private_dns_enabled = true
-
-  tags = {
-    Name        = "${var.environment}-ecr-dkr-endpoint"
-    Environment = var.environment
-    Purpose     = "SecureECRAccess"
-  }
-}
-
-# Security group for VPC endpoints
-resource "aws_security_group" "vpc_endpoint" {
-  name_prefix = "${var.environment}-vpc-endpoint-"
-  vpc_id      = var.vpc_id
-
-  description = "Security group for VPC endpoints used by Harbor"
-
-  ingress {
-    description     = "HTTPS from Harbor instance"
-    from_port       = 443
-    to_port         = 443
-    protocol        = "tcp"
-    security_groups = [aws_security_group.harbor_registry.id]
-  }
-
-  egress {
-    description = "All outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name        = "${var.environment}-vpc-endpoint-sg"
-    Environment = var.environment
-    Purpose     = "VPCEndpointAccess"
   }
 }
 
