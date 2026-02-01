@@ -1,0 +1,386 @@
+# Fluent-bit Configuration for Tetragon Event Export
+# Collects Tetragon JSON events and routes to CloudWatch based on severity
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-config
+  namespace: kube-system
+  labels:
+    k8s-app: fluent-bit
+    app: fluent-bit
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush                     5
+        Log_Level                 info
+        Daemon                    off
+        Parsers_File              parsers.conf
+        HTTP_Server               On
+        HTTP_Listen               0.0.0.0
+        HTTP_Port                 2020
+        storage.path              /var/fluent-bit/state/flb-storage/
+        storage.sync              normal
+        storage.checksum          off
+        storage.backlog.mem_limit 50MB
+
+    # Input from Tetragon log files
+    [INPUT]
+        Name                      tail
+        Path                      /var/log/tetragon/tetragon.log
+        multiline.parser          docker, cri
+        Tag                       tetragon.*
+        Mem_Buf_Limit             32MB
+        Buffer_Chunk_Size         1MB
+        Buffer_Max_Size           5MB
+        storage.type              filesystem
+        Refresh_Interval          10
+
+    # Input from Tetragon export socket
+    [INPUT]
+        Name                      forward
+        Listen                    0.0.0.0
+        Port                      24224
+        Tag                       tetragon.forward
+
+    # Parser for Tetragon JSON events
+    [FILTER]
+        Name                      parser
+        Match                     tetragon.*
+        Key_Name                  log
+        Parser                    tetragon-json
+        Reserve_Data              On
+
+    # Add Kubernetes metadata
+    [FILTER]
+        Name                      kubernetes
+        Match                     tetragon.*
+        Kube_URL                  https://kubernetes.default.svc:443
+        Kube_CA_File              /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        Kube_Token_File           /var/run/secrets/kubernetes.io/serviceaccount/token
+        Merge_Log                 On
+        K8S-Logging.Parser        On
+        K8S-Logging.Exclude       Off
+        Annotations               Off
+        Labels                    On
+
+    # Add node metadata for regional context
+    [FILTER]
+        Name                      modify
+        Match                     tetragon.*
+        Add                       cluster_name ${CLUSTER_NAME}
+        Add                       region ${AWS_DEFAULT_REGION}
+        Add                       node_name ${NODE_NAME}
+
+    # Filter for high-severity events
+    [FILTER]
+        Name                      grep
+        Match                     tetragon.*
+        Regex                     severity (high|critical)|action (sigkill|deny)
+
+    # Route high-severity events to priority stream
+    [FILTER]
+        Name                      rewrite_tag
+        Match                     tetragon.*
+        Rule                      $severity ^(high|critical)$ tetragon.high-severity false
+        Rule                      $action ^(sigkill|deny)$ tetragon.high-severity false
+        Rule                      $event_type ^PROCESS_EXEC$ tetragon.process-exec false
+        Rule                      $event_type ^FILE$ tetragon.file-access false
+        Rule                      $event_type ^NETWORK$ tetragon.network-events false
+        Emitter_Name              re_emitted
+
+    # Regional context enrichment for Kisumu VPC
+    [FILTER]
+        Name                      lua
+        Match                     tetragon.*
+        script                    /fluent-bit/scripts/regional-enrichment.lua
+        call                      enrich_regional_context
+
+    # Output to CloudWatch - High Severity Events
+    [OUTPUT]
+        Name                      cloudwatch_logs
+        Match                     tetragon.high-severity
+        region                    ${AWS_DEFAULT_REGION}
+        log_group_name            /aws/security/drift-engine/high-severity
+        log_stream_name           high-severity-${NODE_NAME}
+        auto_create_group         On
+        auto_retry_requests       On
+        log_retention_days        30
+
+    # Output to CloudWatch - Process Execution Events
+    [OUTPUT]
+        Name                      cloudwatch_logs
+        Match                     tetragon.process-exec
+        region                    ${AWS_DEFAULT_REGION}
+        log_group_name            /aws/security/drift-engine/process-exec
+        log_stream_name           process-exec-${NODE_NAME}
+        auto_create_group         On
+        auto_retry_requests       On
+        log_retention_days        7
+
+    # Output to CloudWatch - File Access Events
+    [OUTPUT]
+        Name                      cloudwatch_logs
+        Match                     tetragon.file-access
+        region                    ${AWS_DEFAULT_REGION}
+        log_group_name            /aws/security/drift-engine/file-access
+        log_stream_name           file-access-${NODE_NAME}
+        auto_create_group         On
+        auto_retry_requests       On
+        log_retention_days        7
+
+    # Output to CloudWatch - Network Events
+    [OUTPUT]
+        Name                      cloudwatch_logs
+        Match                     tetragon.network-events
+        region                    ${AWS_DEFAULT_REGION}
+        log_group_name            /aws/security/drift-engine/network-events
+        log_stream_name           network-events-${NODE_NAME}
+        auto_create_group         On
+        auto_retry_requests       On
+        log_retention_days        7
+
+    # Backup output to S3 for compliance and forensics
+    [OUTPUT]
+        Name                      s3
+        Match                     tetragon.high-severity
+        bucket                    ${S3_SECURITY_LOGS_BUCKET}
+        region                    ${AWS_DEFAULT_REGION}
+        total_file_size           50M
+        upload_timeout            10m
+        s3_key_format             /tetragon-events/%Y/%m/%d/%H/tetragon-events-%Y%m%d-%H%M%S
+        auto_retry_requests       On
+        use_put_object            On
+
+  parsers.conf: |
+    [PARSER]
+        Name                      tetragon-json
+        Format                    json
+        Time_Key                  time
+        Time_Format               %Y-%m-%dT%H:%M:%S.%LZ
+        Time_Keep                 On
+
+    [PARSER]
+        Name                      docker
+        Format                    json
+        Time_Key                  time
+        Time_Format               %Y-%m-%dT%H:%M:%S.%LZ
+        Time_Keep                 On
+
+    [PARSER]
+        Name                      cri
+        Format                    regex
+        Regex                     ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<message>.*)$
+        Time_Key                  time
+        Time_Format               %Y-%m-%dT%H:%M:%S.%L%z
+        Time_Keep                 On
+
+  regional-enrichment.lua: |
+    -- Lua script for regional context enrichment
+    function enrich_regional_context(tag, timestamp, record)
+        -- Kisumu regional VPC CIDR blocks
+        local kisumu_cidrs = {
+            "10.100.0.0/16",
+            "172.31.100.0/24"
+        }
+
+        -- Check if source IP is from Kisumu region
+        local src_ip = record["network"] and record["network"]["src_ip"]
+        if src_ip then
+            for _, cidr in ipairs(kisumu_cidrs) do
+                if is_ip_in_cidr(src_ip, cidr) then
+                    record["regional_context"] = {
+                        ["region"] = "lake-victoria-kisumu",
+                        ["enhanced_enforcement"] = true,
+                        ["vpc_cidr"] = cidr
+                    }
+                    record["severity"] = "critical"  -- Escalate severity for Kisumu region
+                    break
+                end
+            end
+        end
+
+        -- Check node metadata for regional context
+        local node_name = record["node_name"]
+        if node_name and string.find(node_name, "kisumu") then
+            record["regional_context"] = record["regional_context"] or {}
+            record["regional_context"]["node_region"] = "kisumu"
+        end
+
+        return 2, timestamp, record
+    end
+
+    function is_ip_in_cidr(ip, cidr)
+        -- Simple CIDR check (would use proper library in production)
+        local network, prefix = cidr:match("([^/]+)/(%d+)")
+        if not network or not prefix then
+            return false
+        end
+
+        -- Convert to numeric representation for comparison
+        local function ip_to_num(ip_str)
+            local a, b, c, d = ip_str:match("(%d+)%.(%d+)%.(%d+)%.(%d+)")
+            if not a then return nil end
+            return (a << 24) + (b << 16) + (c << 8) + d
+        end
+
+        local ip_num = ip_to_num(ip)
+        local network_num = ip_to_num(network)
+
+        if not ip_num or not network_num then
+            return false
+        end
+
+        local mask = (0xFFFFFFFF << (32 - tonumber(prefix))) & 0xFFFFFFFF
+        return (ip_num & mask) == (network_num & mask)
+    end
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluent-bit
+  namespace: kube-system
+  labels:
+    app: fluent-bit
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fluent-bit-read
+  labels:
+    app: fluent-bit
+rules:
+- apiGroups: [""]
+  resources:
+  - namespaces
+  - pods
+  - nodes
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fluent-bit-read
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fluent-bit-read
+subjects:
+- kind: ServiceAccount
+  name: fluent-bit
+  namespace: kube-system
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluent-bit
+  namespace: kube-system
+  labels:
+    k8s-app: fluent-bit-logging
+    version: v1
+    kubernetes.io/cluster-service: "true"
+spec:
+  selector:
+    matchLabels:
+      k8s-app: fluent-bit-logging
+  template:
+    metadata:
+      labels:
+        k8s-app: fluent-bit-logging
+        version: v1
+        kubernetes.io/cluster-service: "true"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "2020"
+        prometheus.io/path: /api/v1/metrics/prometheus
+    spec:
+      serviceAccount: fluent-bit
+      serviceAccountName: fluent-bit
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      - operator: "Exists"
+        effect: "NoExecute"
+      - operator: "Exists"
+        effect: "NoSchedule"
+      containers:
+      - name: fluent-bit
+        image: cr.fluentd.org/fluent/fluent-bit:2.2.0
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 2020
+        env:
+        - name: AWS_DEFAULT_REGION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['topology.kubernetes.io/region']
+        - name: CLUSTER_NAME
+          value: "${cluster_name}"
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: S3_SECURITY_LOGS_BUCKET
+          value: "${s3_security_logs_bucket}"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        - name: varlogtetragon
+          mountPath: /var/log/tetragon
+          readOnly: true
+        - name: fluent-bit-config
+          mountPath: /fluent-bit/etc/
+        - name: fluent-bit-scripts
+          mountPath: /fluent-bit/scripts/
+        - name: mnt
+          mountPath: /mnt
+          readOnly: true
+        # Security context for access to Tetragon logs
+        securityContext:
+          privileged: true
+          runAsUser: 0
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: varlogtetragon
+        hostPath:
+          path: /var/log/tetragon
+      - name: fluent-bit-config
+        configMap:
+          name: fluent-bit-config
+          items:
+          - key: fluent-bit.conf
+            path: fluent-bit.conf
+          - key: parsers.conf
+            path: parsers.conf
+      - name: fluent-bit-scripts
+        configMap:
+          name: fluent-bit-config
+          items:
+          - key: regional-enrichment.lua
+            path: regional-enrichment.lua
+      - name: mnt
+        hostPath:
+          path: /mnt
+      nodeSelector:
+        "eBPF-Ready": "true"

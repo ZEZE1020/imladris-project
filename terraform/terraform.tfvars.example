@@ -1,0 +1,133 @@
+# Example Terraform variables for Real-Time Infrastructure Drift & Runtime Enforcement Engine
+# Copy this file to terraform.tfvars and modify the values according to your environment
+
+# Basic Configuration
+cluster_name       = "security-drift-engine"
+kubernetes_version = "1.28"
+region            = "us-east-1"
+
+# Network Configuration
+vpc_id             = "vpc-12345678"
+subnet_ids         = ["subnet-12345678", "subnet-87654321", "subnet-13579246"]
+private_subnet_ids = ["subnet-private1", "subnet-private2", "subnet-private3"]
+
+# Restrict access to EKS API server
+public_access_cidrs = [
+  "10.0.0.0/8",        # Corporate network
+  "203.0.113.0/24"     # Admin access CIDR
+]
+
+# Node Group Configuration
+node_instance_types = ["m6i.large", "m6i.xlarge"]  # 6th gen instances for optimal eBPF performance
+desired_nodes      = 3
+min_nodes         = 2
+max_nodes         = 10
+node_disk_size    = 50  # GB
+
+# Cilium and Tetragon Versions
+cilium_version   = "1.14.5"
+tetragon_version = "1.0.2"
+
+# Security Configuration
+log_retention_days    = 30
+kms_deletion_window   = 7
+
+# Lake Victoria / Kisumu Regional Context
+kisumu_vpc_cidrs = [
+  "10.100.0.0/16",     # Kisumu primary VPC
+  "172.31.100.0/24"    # Kisumu edge network
+]
+regional_enforcement_enabled = true
+
+# Lambda Configuration
+lambda_timeout     = 60   # seconds
+lambda_memory_size = 512  # MB
+
+# CloudWatch Log Groups
+high_severity_log_group   = "/aws/security/drift-engine/high-severity"
+process_exec_log_group    = "/aws/security/drift-engine/process-exec"
+file_access_log_group     = "/aws/security/drift-engine/file-access"
+network_events_log_group  = "/aws/security/drift-engine/network-events"
+
+# Process Blacklist Configuration
+process_blacklist = [
+  "netcat",
+  "nc",
+  "nmap",
+  "wget",
+  "curl",
+  "apt",
+  "apt-get",
+  "yum",
+  "dnf",
+  "pip",
+  "pip3",
+  "npm",
+  "gem",
+  "composer",
+  "bash",
+  "sh",
+  "zsh",
+  "fish",
+  "tcpdump",
+  "wireshark",
+  "strace",
+  "gdb",
+  "ssh",
+  "scp",
+  "rsync",
+  "socat",
+  "telnet",
+  "ftp",
+  "tftp"
+]
+
+# File Integrity Monitoring Paths
+fim_protected_paths = [
+  "/etc",
+  "/bin",
+  "/sbin",
+  "/lib",
+  "/lib64",
+  "/usr/bin",
+  "/usr/sbin",
+  "/usr/lib",
+  "/usr/lib64",
+  "/boot",
+  "/var/lib/kubelet",
+  "/var/lib/containerd",
+  "/var/lib/docker"
+]
+
+# Network Security Configuration
+allowed_egress_cidrs = [
+  "10.0.0.0/8",        # Private RFC 1918
+  "172.16.0.0/12",     # Private RFC 1918
+  "192.168.0.0/16",    # Private RFC 1918
+  "169.254.169.254/32" # AWS metadata service
+]
+
+blocked_egress_cidrs = [
+  "0.0.0.0/0"  # Block all by default - use allowlist approach
+]
+
+# Fluent-bit Configuration
+fluent_bit_version        = "2.2.0"
+fluent_bit_buffer_size    = "32MB"
+fluent_bit_flush_interval = 5  # seconds
+
+# Common Tags
+tags = {
+  Environment     = "production"
+  Project         = "security-drift-engine"
+  Owner          = "devsecops-team"
+  ManagedBy      = "terraform"
+  SecurityLevel  = "critical"
+  eBPFEnabled    = "true"
+  ComplianceReq  = "zero-trust"
+  Region         = "us-east-1"
+  CostCenter     = "security-operations"
+  Backup         = "daily"
+  Monitoring     = "enabled"
+  AlertLevel     = "high"
+}

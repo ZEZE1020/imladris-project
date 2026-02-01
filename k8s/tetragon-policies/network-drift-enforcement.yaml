@@ -1,0 +1,458 @@
+# Network Drift Enforcement Policy
+# Blocks unauthorized egress connections at the socket level
+# Uses kprobes on network stack for comprehensive coverage
+
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: network-drift-enforcement
+  namespace: kube-system
+  labels:
+    app: tetragon
+    policy-type: network-enforcement
+    severity: high
+spec:
+  # TCP connection monitoring and enforcement
+  kprobes:
+  - call: "tcp_connect"
+    syscall: false
+    args:
+    - index: 0
+      type: "sock"
+    selectors:
+    # Block connections to unauthorized external CIDRs
+    - matchArgs:
+      - index: 0
+        operator: "DAddr"
+        values:
+        # Block connections to suspicious/malicious ranges
+        - "0.0.0.0/0"      # Block all by default - use allowlist
+      matchBinaries:
+      - operator: "NotIn"
+        values:
+        # Allow specific system processes
+        - "/usr/bin/kubelet"
+        - "/usr/bin/containerd"
+        - "/usr/bin/crio"
+        - "/pause"
+        # Allow DNS resolution
+        - "/usr/bin/systemd-resolved"
+        - "/usr/sbin/chronyd"
+      matchActions:
+      - action: Deny      # Block unauthorized TCP connections
+        rateLimit: "1s"
+      - action: Post
+        rateLimit: "100ms"
+
+    # Allow specific legitimate ranges
+    - matchArgs:
+      - index: 0
+        operator: "DAddr"
+        values:
+        # AWS metadata service
+        - "169.254.169.254/32"
+        # Private RFC 1918 ranges
+        - "10.0.0.0/8"
+        - "172.16.0.0/12"
+        - "192.168.0.0/16"
+        # Kubernetes service ranges (adjust based on your cluster)
+        - "10.100.0.0/16"
+        # AWS EKS API server ranges
+        - "52.94.0.0/16"
+        - "54.230.0.0/16"
+      matchActions:
+      - action: Post      # Log allowed connections for monitoring
+        rateLimit: "10s"
+
+  # UDP traffic monitoring (DNS, etc.)
+  - call: "udp_sendmsg"
+    syscall: false
+    args:
+    - index: 0
+      type: "sock"
+    - index: 1
+      type: "msghdr"
+    - index: 2
+      type: "size_t"
+    selectors:
+    # Monitor DNS queries to unauthorized servers
+    - matchArgs:
+      - index: 0
+        operator: "DPort"
+        values:
+        - "53"      # DNS port
+      - index: 0
+        operator: "DAddr"
+        values:
+        # Block DNS to unauthorized resolvers
+        - "8.8.8.8"         # Google DNS
+        - "8.8.4.4"         # Google DNS
+        - "1.1.1.1"         # Cloudflare DNS
+        - "1.0.0.1"         # Cloudflare DNS
+        - "208.67.222.222"  # OpenDNS
+        - "208.67.220.220"  # OpenDNS
+      matchActions:
+      - action: Deny      # Block unauthorized DNS queries
+        rateLimit: "1s"
+      - action: Post
+
+    # Allow corporate DNS servers
+    - matchArgs:
+      - index: 0
+        operator: "DPort"
+        values:
+        - "53"
+      - index: 0
+        operator: "DAddr"
+        values:
+        # AWS VPC DNS
+        - "169.254.169.253"
+        # Corporate DNS (adjust based on your environment)
+        - "10.0.0.2"
+        - "10.100.0.2"
+      matchActions:
+      - action: Post      # Log allowed DNS queries
+        rateLimit: "30s"
+
+  # Monitor raw socket creation (often used in attacks)
+  - call: "security_socket_create"
+    syscall: false
+    args:
+    - index: 0
+      type: "int"  # family
+    - index: 1
+      type: "int"  # type
+    - index: 2
+      type: "int"  # protocol
+    - index: 3
+      type: "int"  # kern
+    selectors:
+    # Block raw socket creation
+    - matchArgs:
+      - index: 1
+        operator: "Equal"
+        values:
+        - "3"       # SOCK_RAW
+      matchActions:
+      - action: Deny      # Block raw socket creation
+        rateLimit: "1s"
+      - action: Post
+
+    # Monitor packet sockets (used for packet capture)
+    - matchArgs:
+      - index: 0
+        operator: "Equal"
+        values:
+        - "17"      # AF_PACKET
+      matchActions:
+      - action: Deny      # Block packet socket creation
+        rateLimit: "1s"
+      - action: Post
+
+  # Socket binding monitoring
+  - call: "security_socket_bind"
+    syscall: false
+    args:
+    - index: 0
+      type: "sock"
+    - index: 1
+      type: "sockaddr"
+    - index: 2
+      type: "int"
+    selectors:
+    # Monitor binding to privileged ports
+    - matchArgs:
+      - index: 1
+        operator: "SPort"
+        values:
+        - "1-1023"   # Privileged ports
+      matchBinaries:
+      - operator: "NotIn"
+        values:
+        # Allow system services to bind privileged ports
+        - "/usr/bin/kubelet"
+        - "/usr/bin/containerd"
+        - "/usr/sbin/sshd"
+        - "/usr/sbin/systemd"
+      matchActions:
+      - action: Deny      # Block unauthorized privileged port binding
+        rateLimit: "1s"
+      - action: Post
+
+    # Monitor binding to external interfaces
+    - matchArgs:
+      - index: 1
+        operator: "SAddr"
+        values:
+        - "0.0.0.0"   # Bind to all interfaces
+      matchActions:
+      - action: Post      # Log binding attempts
+        rateLimit: "5s"
+
+---
+# Advanced Network Traffic Analysis
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: network-traffic-analysis
+  namespace: kube-system
+  labels:
+    app: tetragon
+    policy-type: traffic-analysis
+    severity: medium
+spec:
+  # Monitor network namespace operations
+  kprobes:
+  - call: "security_socket_post_create"
+    syscall: false
+    args:
+    - index: 0
+      type: "sock"
+    - index: 1
+      type: "int"
+    - index: 2
+      type: "int"
+    - index: 3
+      type: "int"
+    - index: 4
+      type: "int"
+    selectors:
+    # Log all socket creation for baseline analysis
+    - matchArgs:
+      - index: 2
+        operator: "In"
+        values:
+        - "1"       # SOCK_STREAM (TCP)
+        - "2"       # SOCK_DGRAM (UDP)
+      matchActions:
+      - action: Post      # Log socket creation
+        rateLimit: "10s"
+
+  # Monitor socket options that could indicate malicious activity
+  - call: "security_socket_setsockopt"
+    syscall: false
+    args:
+    - index: 0
+      type: "sock"
+    - index: 1
+      type: "int"      # level
+    - index: 2
+      type: "int"      # optname
+    selectors:
+    # Monitor SO_REUSEADDR and SO_REUSEPORT (port hijacking)
+    - matchArgs:
+      - index: 1
+        operator: "Equal"
+        values:
+        - "1"       # SOL_SOCKET
+      - index: 2
+        operator: "In"
+        values:
+        - "2"       # SO_REUSEADDR
+        - "15"      # SO_REUSEPORT
+      matchActions:
+      - action: Post      # Log socket reuse attempts
+        rateLimit: "5s"
+
+    # Monitor IP_TRANSPARENT (traffic interception)
+    - matchArgs:
+      - index: 1
+        operator: "Equal"
+        values:
+        - "0"       # IPPROTO_IP
+      - index: 2
+        operator: "Equal"
+        values:
+        - "19"      # IP_TRANSPARENT
+      matchActions:
+      - action: Deny      # Block transparent proxy attempts
+        rateLimit: "1s"
+      - action: Post
+
+---
+# Network Protocol Enforcement
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: protocol-enforcement
+  namespace: kube-system
+  labels:
+    app: tetragon
+    policy-type: protocol-enforcement
+    severity: medium
+spec:
+  # Monitor specific protocols that shouldn't be used in production
+  kprobes:
+  # Block FTP connections (insecure protocol)
+  - call: "tcp_connect"
+    syscall: false
+    args:
+    - index: 0
+      type: "sock"
+    selectors:
+    - matchArgs:
+      - index: 0
+        operator: "DPort"
+        values:
+        - "21"      # FTP
+        - "20"      # FTP Data
+      matchActions:
+      - action: Deny
+        rateLimit: "1s"
+      - action: Post
+
+    # Block Telnet connections (insecure protocol)
+    - matchArgs:
+      - index: 0
+        operator: "DPort"
+        values:
+        - "23"      # Telnet
+      matchActions:
+      - action: Deny
+        rateLimit: "1s"
+      - action: Post
+
+    # Block TFTP connections
+    - matchArgs:
+      - index: 0
+        operator: "DPort"
+        values:
+        - "69"      # TFTP
+      matchActions:
+      - action: Deny
+        rateLimit: "1s"
+      - action: Post
+
+    # Monitor HTTP connections (should use HTTPS in production)
+    - matchArgs:
+      - index: 0
+        operator: "DPort"
+        values:
+        - "80"      # HTTP
+      matchActions:
+      - action: Post      # Log but allow (may be legitimate internal traffic)
+        rateLimit: "30s"
+
+    # Monitor high-numbered ports often used for backdoors
+    - matchArgs:
+      - index: 0
+        operator: "DPortRange"
+        values:
+        - "8080-8090"    # Common backdoor ports
+        - "9000-9999"    # Development/debug ports
+        - "31337"        # Elite/hacker port
+        - "4444"         # Metasploit default
+        - "5555"         # Common backdoor
+        - "6666-6669"    # IRC/backdoor range
+        - "12345"        # NetBus
+        - "54321"        # Back Orifice
+      matchActions:
+      - action: Deny
+        rateLimit: "1s"
+      - action: Post
+
+---
+# Regional VPC Enforcement (Lake Victoria/Kisumu)
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: regional-vpc-enforcement
+  namespace: kube-system
+  labels:
+    app: tetragon
+    policy-type: regional-security
+    severity: critical
+    region: lake-victoria-kisumu
+spec:
+  # Stricter enforcement for specific regional VPC ranges
+  kprobes:
+  - call: "tcp_connect"
+    syscall: false
+    args:
+    - index: 0
+      type: "sock"
+    selectors:
+    # Enhanced monitoring for Lake Victoria/Kisumu region
+    - matchArgs:
+      - index: 0
+        operator: "SAddr"
+        values:
+        # Kisumu regional VPC CIDR blocks
+        - "10.100.0.0/16"
+        - "172.31.100.0/24"
+      - index: 0
+        operator: "DAddr"
+        values:
+        # Any external destination
+        - "0.0.0.0/0"
+      matchActions:
+      - action: Deny      # Strict deny for regional nodes
+        rateLimit: "1s"
+      - action: Post
+
+    # Allow only essential AWS services for regional nodes
+    - matchArgs:
+      - index: 0
+        operator: "SAddr"
+        values:
+        - "10.100.0.0/16"
+        - "172.31.100.0/24"
+      - index: 0
+        operator: "DAddr"
+        values:
+        # AWS metadata
+        - "169.254.169.254/32"
+        # EKS API server (region-specific)
+        - "52.94.0.0/16"
+        # VPC DNS
+        - "169.254.169.253/32"
+      matchActions:
+      - action: Post      # Log all connections from regional nodes
+        rateLimit: "1s"
+
+  # Enhanced UDP monitoring for regional VPCs
+  - call: "udp_sendmsg"
+    syscall: false
+    args:
+    - index: 0
+      type: "sock"
+    - index: 1
+      type: "msghdr"
+    - index: 2
+      type: "size_t"
+    selectors:
+    # Block all UDP except DNS for regional nodes
+    - matchArgs:
+      - index: 0
+        operator: "SAddr"
+        values:
+        - "10.100.0.0/16"
+        - "172.31.100.0/24"
+      - index: 0
+        operator: "DPort"
+        values:
+        - "1-52"        # Below DNS
+        - "54-65535"    # Above DNS
+      matchActions:
+      - action: Deny      # Block all non-DNS UDP
+        rateLimit: "1s"
+      - action: Post
+
+    # Allow only VPC DNS for regional nodes
+    - matchArgs:
+      - index: 0
+        operator: "SAddr"
+        values:
+        - "10.100.0.0/16"
+        - "172.31.100.0/24"
+      - index: 0
+        operator: "DPort"
+        values:
+        - "53"          # DNS only
+      - index: 0
+        operator: "DAddr"
+        values:
+        - "169.254.169.253"  # VPC DNS only
+      matchActions:
+      - action: Post      # Log DNS queries
+        rateLimit: "5s"

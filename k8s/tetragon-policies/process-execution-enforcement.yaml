@@ -1,0 +1,385 @@
+# Process Execution Drift Detection and Enforcement Policy
+# Blocks unauthorized process execution with SIGKILL termination
+# Uses tracepoint:sched:sched_process_exec for comprehensive process monitoring
+
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: process-execution-enforcement
+  namespace: kube-system
+  labels:
+    app: tetragon
+    policy-type: runtime-enforcement
+    severity: critical
+spec:
+  # Hook into process execution tracepoint for maximum visibility
+  tracepoints:
+  - subsys: "sched"
+    event: "sched_process_exec"
+    args:
+    - index: 0
+      type: "linux_binprm"
+    # krettracepoint to capture process start completion
+  - subsys: "sched"
+    event: "sched_process_fork"
+    args:
+    - index: 0
+      type: "task_struct"
+
+  # Process execution kprobes for additional coverage
+  kprobes:
+  - call: "security_bprm_check"
+    syscall: false
+    args:
+    - index: 0
+      type: "linux_binprm"
+    selectors:
+    - matchArgs:
+      - index: 0
+        operator: "Equal"
+        values:
+        - "/bin/bash"
+        - "/bin/sh"
+        - "/bin/zsh"
+        - "/bin/dash"
+        - "/usr/bin/curl"
+        - "/usr/bin/wget"
+        - "/usr/bin/netcat"
+        - "/usr/bin/nc"
+        - "/usr/bin/nmap"
+        - "/usr/bin/apt"
+        - "/usr/bin/apt-get"
+        - "/usr/bin/yum"
+        - "/usr/bin/dnf"
+        - "/usr/bin/pip"
+        - "/usr/bin/pip3"
+        - "/usr/bin/npm"
+        - "/usr/bin/gem"
+        - "/usr/bin/ssh"
+        - "/usr/bin/scp"
+        - "/usr/bin/rsync"
+        - "/usr/bin/socat"
+        - "/usr/bin/telnet"
+        - "/usr/bin/ftp"
+        - "/usr/bin/tftp"
+        - "/usr/bin/tcpdump"
+        - "/usr/bin/strace"
+        - "/usr/bin/gdb"
+      matchActions:
+      - action: Sigkill  # Immediately terminate unauthorized processes
+        rateLimit: "1s"   # Prevent action spam
+      - action: Post      # Log the event for forensics
+        rateLimit: "100ms"
+
+  # Enhanced execve system call monitoring with argument inspection
+  - call: "sys_execve"
+    syscall: true
+    args:
+    - index: 0
+      type: "string"
+      sizeArgIndex: 1
+    - index: 1
+      type: "char_buff"
+      sizeArgIndex: 2
+    - index: 2
+      type: "char_buff"
+      sizeArgIndex: 3
+    selectors:
+    # Block shell-based attacks and package managers
+    - matchArgs:
+      - index: 0
+        operator: "Equal"
+        values:
+        - "/bin/bash"
+        - "/bin/sh"
+        - "/usr/bin/bash"
+        - "/usr/bin/sh"
+      matchActions:
+      - action: Sigkill
+        rateLimit: "1s"
+      - action: Post
+
+    # Block network reconnaissance tools
+    - matchArgs:
+      - index: 0
+        operator: "Equal"
+        values:
+        - "/usr/bin/nmap"
+        - "/usr/bin/netcat"
+        - "/usr/bin/nc"
+        - "/usr/bin/curl"
+        - "/usr/bin/wget"
+        - "/usr/bin/telnet"
+      matchActions:
+      - action: Sigkill
+        rateLimit: "1s"
+      - action: Post
+
+    # Block package managers and installers
+    - matchArgs:
+      - index: 0
+        operator: "Equal"
+        values:
+        - "/usr/bin/apt"
+        - "/usr/bin/apt-get"
+        - "/usr/bin/yum"
+        - "/usr/bin/dnf"
+        - "/usr/bin/pip"
+        - "/usr/bin/pip3"
+        - "/usr/bin/npm"
+        - "/usr/bin/gem"
+        - "/usr/bin/composer"
+      matchActions:
+      - action: Sigkill
+        rateLimit: "1s"
+      - action: Post
+
+    # Block debugging and analysis tools
+    - matchArgs:
+      - index: 0
+        operator: "Equal"
+        values:
+        - "/usr/bin/strace"
+        - "/usr/bin/gdb"
+        - "/usr/bin/tcpdump"
+        - "/usr/bin/wireshark"
+        - "/usr/bin/ltrace"
+      matchActions:
+      - action: Sigkill
+        rateLimit: "1s"
+      - action: Post
+
+    # Allow-list approach: Only permit known application entrypoints
+    - matchArgs:
+      - index: 0
+        operator: "NotEqual"
+        values:
+        # Kubernetes system processes
+        - "/usr/bin/kubelet"
+        - "/usr/bin/kube-proxy"
+        - "/usr/bin/containerd"
+        - "/usr/bin/runc"
+        - "/usr/bin/crio"
+
+        # Container runtime processes
+        - "/pause"
+        - "/usr/local/bin/entrypoint"
+        - "/entrypoint.sh"
+        - "/docker-entrypoint.sh"
+
+        # Common application runtimes
+        - "/usr/bin/java"
+        - "/usr/bin/node"
+        - "/usr/bin/python"
+        - "/usr/bin/python3"
+        - "/usr/bin/ruby"
+        - "/usr/bin/php"
+        - "/usr/bin/go"
+
+        # System utilities (minimal set)
+        - "/bin/cat"
+        - "/bin/ls"
+        - "/bin/echo"
+        - "/bin/sleep"
+        - "/usr/bin/env"
+        - "/usr/bin/id"
+        - "/usr/bin/whoami"
+      matchPIDs:
+      # Apply to all processes except init
+      - operator: "NotIn"
+        followForks: true
+        isNamespacePID: false
+        values:
+        - 1  # Init process
+      matchActions:
+      - action: Post  # Log all other executions for analysis
+
+---
+# Advanced Process Monitoring with Argument Analysis
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: process-argument-analysis
+  namespace: kube-system
+  labels:
+    app: tetragon
+    policy-type: behavioral-analysis
+    severity: high
+spec:
+  # Monitor process arguments for malicious patterns
+  kprobes:
+  - call: "do_execveat_common"
+    syscall: false
+    args:
+    - index: 0
+      type: "int"
+    - index: 1
+      type: "filename"
+    - index: 2
+      type: "char_buff"
+      sizeArgIndex: 3
+    - index: 3
+      type: "char_buff"
+      sizeArgIndex: 4
+    selectors:
+    # Detect reverse shell patterns
+    - matchArgs:
+      - index: 2
+        operator: "Contains"
+        values:
+        - "/dev/tcp"
+        - "bash -i"
+        - "sh -i"
+        - "nc -e"
+        - "ncat -e"
+        - "/bin/bash -c"
+        - "python -c"
+        - "perl -e"
+        - "ruby -e"
+      matchActions:
+      - action: Sigkill
+        rateLimit: "1s"
+      - action: Post
+
+    # Detect base64 encoded commands
+    - matchArgs:
+      - index: 2
+        operator: "Regex"
+        values:
+        - ".*echo\\s+[A-Za-z0-9+/=]{20,}.*\\|.*base64.*"
+        - ".*printf\\s+[A-Za-z0-9+/=]{20,}.*\\|.*base64.*"
+      matchActions:
+      - action: Sigkill
+        rateLimit: "1s"
+      - action: Post
+
+    # Detect privilege escalation attempts
+    - matchArgs:
+      - index: 2
+        operator: "Contains"
+        values:
+        - "sudo su"
+        - "sudo -s"
+        - "sudo bash"
+        - "su -"
+        - "chmod +s"
+        - "chmod 4755"
+      matchActions:
+      - action: Sigkill
+        rateLimit: "1s"
+      - action: Post
+
+    # Detect file download patterns
+    - matchArgs:
+      - index: 2
+        operator: "Regex"
+        values:
+        - ".*(curl|wget)\\s+.*http[s]?://.*"
+        - ".*\\|\\s*sh"
+        - ".*\\|\\s*bash"
+        - ".*python.*-c.*urllib.*"
+      matchActions:
+      - action: Sigkill
+        rateLimit: "1s"
+      - action: Post
+
+---
+# Process Namespace and Container Escape Detection
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: container-escape-detection
+  namespace: kube-system
+  labels:
+    app: tetragon
+    policy-type: container-security
+    severity: critical
+spec:
+  # Monitor namespace operations that could indicate container escape
+  kprobes:
+  - call: "security_capget"
+    syscall: false
+    args:
+    - index: 0
+      type: "kernel_cap_t"
+    selectors:
+    - matchCapabilities:
+      - type: "Effective"
+        operator: "In"
+        values:
+        - "CAP_SYS_ADMIN"
+        - "CAP_SYS_PTRACE"
+        - "CAP_SYS_MODULE"
+        - "CAP_DAC_OVERRIDE"
+      matchActions:
+      - action: Post
+        rateLimit: "1s"
+
+  # Monitor unshare syscalls for namespace manipulation
+  - call: "sys_unshare"
+    syscall: true
+    args:
+    - index: 0
+      type: "int"
+    selectors:
+    - matchArgs:
+      - index: 0
+        operator: "Mask"
+        values:
+        - "0x20000000"  # CLONE_NEWPID
+        - "0x40000000"  # CLONE_NEWNET
+        - "0x4000000"   # CLONE_NEWNS
+        - "0x8000000"   # CLONE_NEWUTS
+        - "0x2000000"   # CLONE_NEWIPC
+        - "0x10000000"  # CLONE_NEWUSER
+      matchActions:
+      - action: Sigkill  # Block namespace manipulation attempts
+        rateLimit: "1s"
+      - action: Post
+
+  # Monitor mount operations for container escape
+  - call: "sys_mount"
+    syscall: true
+    args:
+    - index: 0
+      type: "string"
+      sizeArgIndex: 1
+    - index: 1
+      type: "string"
+      sizeArgIndex: 2
+    - index: 2
+      type: "string"
+      sizeArgIndex: 3
+    - index: 3
+      type: "unsigned long"
+    selectors:
+    # Block dangerous mount operations
+    - matchArgs:
+      - index: 1
+        operator: "Equal"
+        values:
+        - "/host"
+        - "/hostfs"
+        - "/rootfs"
+        - "/proc"
+        - "/sys"
+        - "/dev"
+      matchActions:
+      - action: Sigkill
+        rateLimit: "1s"
+      - action: Post
+
+    # Block bind mounts of sensitive paths
+    - matchArgs:
+      - index: 0
+        operator: "Equal"
+        values:
+        - "/var/run/docker.sock"
+        - "/var/lib/kubelet"
+        - "/etc/kubernetes"
+        - "/etc/passwd"
+        - "/etc/shadow"
+      matchActions:
+      - action: Sigkill
+        rateLimit: "1s"
+      - action: Post
