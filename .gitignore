@@ -98,3 +98,4 @@ kisumu-test.json
 # Cache directories
 .cache/
 .pytest_cache/
+tfvenv
