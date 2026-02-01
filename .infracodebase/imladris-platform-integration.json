@@ -1,0 +1,311 @@
+{
+  "name": "Imladris Platform - Complete Integration Architecture",
+  "nodes": [
+    {
+      "id": "imladris-foundation",
+      "label": "Imladris Foundation",
+      "x": 0,
+      "y": 0,
+      "subtitle": "Zero-Trust Infrastructure Platform",
+      "icon": "/icons/elastic/security/security.png",
+      "type": "container",
+      "width": 2830,
+      "height": 1650
+    },
+    {
+      "id": "harbor-registry",
+      "label": "Harbor Registry",
+      "x": 90,
+      "y": 90,
+      "subtitle": "Secure Container Images",
+      "icon": "/icons/onprem/registry/harbor.png",
+      "parentId": "imladris-foundation"
+    },
+    {
+      "id": "governance-engine",
+      "label": "Governance Engine",
+      "x": 310,
+      "y": 90,
+      "subtitle": "OPA Policies & Compliance",
+      "icon": "/icons/ibm/general/governance-risk-compliance.png",
+      "parentId": "imladris-foundation"
+    },
+    {
+      "id": "zero-trust-network",
+      "label": "Zero-Trust Network",
+      "x": 530,
+      "y": 90,
+      "subtitle": "Cilium CNI + NetworkPolicies",
+      "icon": "/icons/gcp/network/network.png",
+      "parentId": "imladris-foundation"
+    },
+    {
+      "id": "monitoring-stack",
+      "label": "Monitoring Stack",
+      "x": 750,
+      "y": 90,
+      "subtitle": "Prometheus + Grafana",
+      "icon": "/icons/gcp/operations/monitoring.png",
+      "parentId": "imladris-foundation"
+    },
+    {
+      "id": "security-runtime",
+      "label": "Runtime Security",
+      "x": 970,
+      "y": 90,
+      "subtitle": "NEW: Tetragon eBPF Engine",
+      "icon": "/icons/aws/security/security-hub.png",
+      "parentId": "imladris-foundation"
+    },
+    {
+      "id": "eks-cluster",
+      "label": "EKS Cluster",
+      "x": 140,
+      "y": 940,
+      "subtitle": "Kubernetes Control Plane",
+      "icon": "/icons/gcp/compute/kubernetes-engine.png",
+      "type": "container",
+      "width": 2600,
+      "height": 620,
+      "parentId": "imladris-foundation"
+    },
+    {
+      "id": "workload-ns",
+      "label": "Application Workloads",
+      "x": 170,
+      "y": 200,
+      "subtitle": "User Applications",
+      "icon": "/icons/azure/compute/kubernetes-gitops.png",
+      "type": "container",
+      "width": 420,
+      "height": 330,
+      "parentId": "eks-cluster"
+    },
+    {
+      "id": "app-pod-1",
+      "label": "Web App",
+      "x": 90,
+      "y": 90,
+      "subtitle": "Frontend Service",
+      "icon": "/icons/gcp/compute/kubernetes-engine.png",
+      "parentId": "workload-ns"
+    },
+    {
+      "id": "app-pod-2",
+      "label": "API Service",
+      "x": 210,
+      "y": 90,
+      "subtitle": "Backend API",
+      "icon": "/icons/gcp/compute/kubernetes-engine.png",
+      "parentId": "workload-ns"
+    },
+    {
+      "id": "security-ns",
+      "label": "Security Namespace",
+      "x": 950,
+      "y": 200,
+      "subtitle": "Runtime Security Components",
+      "icon": "/icons/elastic/security/security.png",
+      "type": "container",
+      "width": 660,
+      "height": 330,
+      "parentId": "eks-cluster"
+    },
+    {
+      "id": "tetragon-agent",
+      "label": "Tetragon",
+      "x": 90,
+      "y": 90,
+      "subtitle": "eBPF Runtime Security",
+      "icon": "/icons/aws/security/security-hub.png",
+      "parentId": "security-ns"
+    },
+    {
+      "id": "cilium-agent",
+      "label": "Cilium CNI",
+      "x": 210,
+      "y": 90,
+      "subtitle": "Network Security",
+      "icon": "/icons/gcp/network/network.png",
+      "parentId": "security-ns"
+    },
+    {
+      "id": "fluent-bit",
+      "label": "Fluent-bit",
+      "x": 330,
+      "y": 90,
+      "subtitle": "Log Aggregation",
+      "icon": "/icons/elastic/elasticsearch/monitoring.png",
+      "parentId": "security-ns"
+    },
+    {
+      "id": "monitoring-ns",
+      "label": "Monitoring Namespace",
+      "x": 1970,
+      "y": 200,
+      "subtitle": "Observability Stack",
+      "icon": "/icons/gcp/operations/monitoring.png",
+      "type": "container",
+      "width": 540,
+      "height": 330,
+      "parentId": "eks-cluster"
+    },
+    {
+      "id": "prometheus",
+      "label": "Prometheus",
+      "x": 90,
+      "y": 90,
+      "subtitle": "Metrics Collection",
+      "icon": "/icons/gcp/operations/monitoring.png",
+      "parentId": "monitoring-ns"
+    },
+    {
+      "id": "grafana",
+      "label": "Grafana",
+      "x": 210,
+      "y": 90,
+      "subtitle": "Visualization",
+      "icon": "/icons/gcp/operations/monitoring.png",
+      "parentId": "monitoring-ns"
+    },
+    {
+      "id": "alertmanager",
+      "label": "AlertManager",
+      "x": 330,
+      "y": 90,
+      "subtitle": "Alert Routing",
+      "icon": "/icons/gcp/operations/monitoring.png",
+      "parentId": "monitoring-ns"
+    },
+    {
+      "id": "gatekeeper",
+      "label": "OPA Gatekeeper",
+      "x": 90,
+      "y": 90,
+      "subtitle": "Policy Enforcement",
+      "icon": "/icons/ibm/general/governance-risk-compliance.png",
+      "parentId": "eks-cluster"
+    },
+    {
+      "id": "falco",
+      "label": "Falco",
+      "x": 450,
+      "y": 90,
+      "subtitle": "Runtime Anomaly Detection",
+      "icon": "/icons/aws/security/security-hub.png",
+      "parentId": "security-ns"
+    },
+    {
+      "id": "network-policies",
+      "label": "NetworkPolicies",
+      "x": 210,
+      "y": 90,
+      "subtitle": "Micro-segmentation",
+      "icon": "/icons/azure/compute/kubernetes-policy.png",
+      "parentId": "eks-cluster"
+    },
+    {
+      "id": "admission-controller",
+      "label": "Admission Controller",
+      "x": 330,
+      "y": 90,
+      "subtitle": "Image Validation",
+      "icon": "/icons/azure/identity/identity-governance.png",
+      "parentId": "eks-cluster"
+    }
+  ],
+  "edges": [
+    {
+      "id": "harbor-to-workloads",
+      "source": "harbor-registry",
+      "target": "workload-ns",
+      "label": "Secure Images",
+      "color": "green"
+    },
+    {
+      "id": "governance-to-gatekeeper",
+      "source": "governance-engine",
+      "target": "gatekeeper",
+      "label": "OPA Policies",
+      "color": "purple"
+    },
+    {
+      "id": "governance-to-admission",
+      "source": "governance-engine",
+      "target": "admission-controller",
+      "label": "Validation Rules",
+      "color": "purple"
+    },
+    {
+      "id": "network-to-cilium",
+      "source": "zero-trust-network",
+      "target": "cilium-agent",
+      "label": "CNI Config",
+      "color": "blue"
+    },
+    {
+      "id": "network-to-policies",
+      "source": "zero-trust-network",
+      "target": "network-policies",
+      "label": "Network Rules",
+      "color": "blue"
+    },
+    {
+      "id": "monitoring-to-prometheus",
+      "source": "monitoring-stack",
+      "target": "prometheus",
+      "label": "Metrics Config",
+      "color": "yellow"
+    },
+    {
+      "id": "runtime-to-tetragon",
+      "source": "security-runtime",
+      "target": "tetragon-agent",
+      "label": "eBPF Policies",
+      "color": "red"
+    },
+    {
+      "id": "runtime-to-falco",
+      "source": "security-runtime",
+      "target": "falco",
+      "label": "Runtime Rules",
+      "color": "red"
+    },
+    {
+      "id": "tetragon-to-fluent",
+      "source": "tetragon-agent",
+      "target": "fluent-bit",
+      "label": "Security Events"
+    },
+    {
+      "id": "fluent-to-prometheus",
+      "source": "fluent-bit",
+      "target": "prometheus",
+      "label": "Metrics"
+    },
+    {
+      "id": "prometheus-to-grafana",
+      "source": "prometheus",
+      "target": "grafana",
+      "label": "Visualization"
+    },
+    {
+      "id": "prometheus-to-alertmanager",
+      "source": "prometheus",
+      "target": "alertmanager",
+      "label": "Alerts"
+    },
+    {
+      "id": "gatekeeper-monitor",
+      "source": "gatekeeper",
+      "target": "app-pod-1",
+      "label": "Policy Check"
+    },
+    {
+      "id": "tetragon-monitor",
+      "source": "tetragon-agent",
+      "target": "app-pod-2",
+      "label": "Runtime Monitor"
+    }
+  ]
+}

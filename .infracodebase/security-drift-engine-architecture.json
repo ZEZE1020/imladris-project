@@ -5,7 +5,7 @@
       "id": "kisumu-vpc",
       "label": "Lake Victoria/Kisumu Regional VPC",
       "subtitle": "10.100.0.0/16",
-      "icon": "/icons/aws/network/vpc.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/network/vpc.png",
       "type": "container",
       "x": 0,
       "y": 0,
@@ -16,7 +16,7 @@
       "id": "standard-vpc",
       "label": "Standard VPC",
       "subtitle": "10.0.0.0/16",
-      "icon": "/icons/aws/network/vpc.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/network/vpc.png",
       "type": "container",
       "x": 520,
       "y": 0,
@@ -27,7 +27,7 @@
       "id": "eks-cluster",
       "label": "EKS Security Cluster",
       "subtitle": "security-drift-engine",
-      "icon": "/icons/aws/analytics/emr-cluster.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/analytics/emr-cluster.png",
       "type": "container",
       "x": 100,
       "y": 400,
@@ -38,7 +38,7 @@
       "id": "security-nodes",
       "label": "Security-Optimized Node Group",
       "subtitle": "eBPF-Ready Nodes",
-      "icon": "/icons/k8s/compute/ds.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/k8s/compute/ds.png",
       "type": "container",
       "x": 90,
       "y": 90,
@@ -50,7 +50,7 @@
       "id": "cilium",
       "label": "Cilium CNI",
       "subtitle": "kube-proxy replacement",
-      "icon": "/icons/k8s/compute/pod.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/k8s/compute/pod.png",
       "x": 90,
       "y": 90,
       "parentId": "security-nodes"
@@ -59,7 +59,7 @@
       "id": "tetragon",
       "label": "Tetragon Runtime Security",
       "subtitle": "eBPF-based monitoring",
-      "icon": "/icons/k8s/compute/ds.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/k8s/compute/ds.png",
       "x": 310,
       "y": 90,
       "parentId": "security-nodes"
@@ -68,7 +68,7 @@
       "id": "fluent-bit",
       "label": "Fluent-bit",
       "subtitle": "Log aggregation",
-      "icon": "/icons/k8s/compute/ds.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/k8s/compute/ds.png",
       "x": 530,
       "y": 90,
       "parentId": "security-nodes"
@@ -77,7 +77,7 @@
       "id": "app-pods",
       "label": "Application Pods",
       "subtitle": "Monitored workloads",
-      "icon": "/icons/k8s/compute/pod.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/k8s/compute/pod.png",
       "x": 90,
       "y": 340,
       "parentId": "security-nodes"
@@ -86,7 +86,7 @@
       "id": "quarantined-pods",
       "label": "Quarantined Pods",
       "subtitle": "Isolated workloads",
-      "icon": "/icons/k8s/compute/pod.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/k8s/compute/pod.png",
       "x": 310,
       "y": 340,
       "parentId": "security-nodes"
@@ -95,7 +95,7 @@
       "id": "aws-services",
       "label": "AWS Services",
       "subtitle": "Supporting Infrastructure",
-      "icon": "/icons/aws/aws.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/aws.png",
       "type": "container",
       "x": 1600,
       "y": 200,
@@ -106,7 +106,7 @@
       "id": "drift-lambda",
       "label": "Drift Enforcement Lambda",
       "subtitle": "Auto-remediation engine",
-      "icon": "/icons/aws/compute/lambda-function.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/compute/lambda-function.png",
       "x": 90,
       "y": 90,
       "parentId": "aws-services"
@@ -115,7 +115,7 @@
       "id": "test-lambda",
       "label": "Remediation Test Lambda",
       "subtitle": "Testing framework",
-      "icon": "/icons/aws/compute/lambda-function.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/compute/lambda-function.png",
       "x": 310,
       "y": 90,
       "parentId": "aws-services"
@@ -126,7 +126,7 @@
       "x": 100,
       "y": 1260,
       "subtitle": "Event aggregation",
-      "icon": "/icons/aws/management/cloudwatch-logs.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/management/cloudwatch-logs.png",
       "type": "container",
       "width": 520,
       "height": 490
@@ -135,7 +135,7 @@
       "id": "s3-archive",
       "label": "S3 Security Archive",
       "subtitle": "Long-term storage",
-      "icon": "/icons/aws/storage/simple-storage-service-s3-bucket.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/storage/simple-storage-service-s3-bucket.png",
       "x": 90,
       "y": 340,
       "parentId": "aws-services"
@@ -144,7 +144,7 @@
       "id": "sns-alerts",
       "label": "SNS Security Alerts",
       "subtitle": "Real-time notifications",
-      "icon": "/icons/aws/integration/simple-notification-service-sns-topic.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/integration/simple-notification-service-sns-topic.png",
       "x": 310,
       "y": 340,
       "parentId": "aws-services"
@@ -153,7 +153,7 @@
       "id": "high-severity-logs",
       "label": "High Severity Events",
       "subtitle": "Critical incidents",
-      "icon": "/icons/aws/management/cloudwatch-rule.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/management/cloudwatch-rule.png",
       "x": 90,
       "y": 90,
       "parentId": "cloudwatch-logs"
@@ -162,7 +162,7 @@
       "id": "process-logs",
       "label": "Process Execution",
       "subtitle": "execve monitoring",
-      "icon": "/icons/aws/management/cloudwatch-logs.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/management/cloudwatch-logs.png",
       "x": 310,
       "y": 90,
       "parentId": "cloudwatch-logs"
@@ -173,7 +173,7 @@
       "x": 90,
       "y": 250,
       "subtitle": "FIM monitoring",
-      "icon": "/icons/aws/management/cloudwatch-logs.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/management/cloudwatch-logs.png",
       "parentId": "cloudwatch-logs"
     },
     {
@@ -182,7 +182,7 @@
       "x": 310,
       "y": 250,
       "subtitle": "Traffic monitoring",
-      "icon": "/icons/aws/management/cloudwatch-logs.png",
+      "icon": "https://stouse2icbprd.blob.core.windows.net/public/icons/aws/management/cloudwatch-logs.png",
       "parentId": "cloudwatch-logs"
     }
   ],
