@@ -33,7 +33,7 @@ resource "aws_identitystore_user" "finops_analyst" {
   }
   
   emails {
-    value   = "sarah.finops@imladris.bank"
+    value   = "ogembogodfrey75+sarah.finops@gmail.com"
     primary = true
   }
 }
@@ -51,7 +51,7 @@ resource "aws_identitystore_user" "senior_devops" {
   }
   
   emails {
-    value   = "alex.devops@imladris.bank"
+    value   = "ogembogodfrey75+alex.devops@gmail.com"
     primary = true
   }
 }
@@ -69,7 +69,7 @@ resource "aws_identitystore_user" "junior_devops" {
   }
   
   emails {
-    value   = "jamie.devops@imladris.bank"
+    value   = "ogembogodfrey75+jamie.devops@gmail.com"
     primary = true
   }
 }
@@ -87,7 +87,7 @@ resource "aws_identitystore_user" "backend_developer" {
   }
   
   emails {
-    value   = "mike.dev@imladris.bank"
+    value   = "ogembogodfrey75+mike.dev@gmail.com"
     primary = true
   }
 }
@@ -105,7 +105,7 @@ resource "aws_identitystore_user" "frontend_developer" {
   }
   
   emails {
-    value   = "lisa.dev@imladris.bank"
+    value   = "ogembogodfrey75+lisa.dev@gmail.com"
     primary = true
   }
 }
