@@ -72,8 +72,7 @@ resource "aws_security_group" "harbor_registry" {
     from_port   = 123
     to_port     = 123
     protocol    = "udp"
-    cidr_blocks = ["0.0.0.0/0"]
-    cidr_blocks = ["10.0.0.0/16"]  # VPC CIDR only
+    cidr_blocks = ["10.0.0.0/16"]  # VPC CIDR only - Zero Trust
   }
 
   tags = {

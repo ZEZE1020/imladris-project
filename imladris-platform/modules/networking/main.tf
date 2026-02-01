@@ -23,8 +23,8 @@ resource "aws_subnet" "private" {
   tags = {
     Name = "imladris-${var.environment}-private-${count.index + 1}"
     Type = "Private"
-    kubernetes.io/role/internal-elb = "1"
-    kubernetes.io/cluster/imladris-${var.environment}-cluster = "owned"
+    "kubernetes.io/role/internal-elb" = "1"
+    "kubernetes.io/cluster/imladris-${var.environment}-cluster" = "owned"
   }
 }
 

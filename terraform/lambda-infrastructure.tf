@@ -72,15 +72,13 @@ resource "aws_s3_bucket_versioning" "security_logs" {
   }
 }
 
-resource "aws_s3_bucket_encryption" "security_logs" {
+resource "aws_s3_bucket_server_side_encryption_configuration" "security_logs" {
   bucket = aws_s3_bucket.security_logs.id
 
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        kms_master_key_id = aws_kms_key.eks_encryption.arn
-        sse_algorithm     = "aws:kms"
-      }
+  rule {
+    apply_server_side_encryption_by_default {
+      kms_master_key_id = aws_kms_key.eks_encryption.arn
+      sse_algorithm     = "aws:kms"
     }
   }
 }
