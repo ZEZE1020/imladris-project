@@ -23,7 +23,7 @@ A Zero Trust AWS environment for financial services. Implements private networki
 
 ## Architecture
 
-\`\`\`
+```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           AWS ACCOUNT                                        │
 │                                                                              │
@@ -38,7 +38,7 @@ A Zero Trust AWS environment for financial services. Implements private networki
 │  Checkov     │  No IGW      │  KMS Encrypt │  SSM Auto-Remediation          │
 │  Trivy       │  VPC Endpts  │  IAM IRSA    │  Identity Center (5 users)     │
 └──────────────┴──────────────┴──────────────┴────────────────────────────────┘
-\`\`\`
+```
 
 ### Network Design
 
@@ -51,7 +51,7 @@ A Zero Trust AWS environment for financial services. Implements private networki
 
 ## Repository Structure
 
-\`\`\`
+```
 imladris-project/
 ├── imladris-platform/          # Terraform infrastructure
 │   ├── main.tf                 # Root module
@@ -62,24 +62,17 @@ imladris-project/
 │
 ├── imladris-governance/        # OPA policies
 │   └── policies/terraform/     # Terraform plan validation
-│       ├── deny-public-ingress.rego
-│       ├── enforce-fargate.rego
-│       └── require-vpc-lattice.rego
 │
 ├── imladris-gitops/            # ArgoCD configuration
 │   ├── bootstrap/              # App-of-apps
 │   └── tenants/banking-core/   # Sample application
 │
 ├── imladris-service-template/  # Go service starter
-│   ├── main.go
-│   ├── Dockerfile
-│   └── k8s/
 │
 ├── lambda/                     # Remediation functions
-│   └── drift_enforcement_lambda.py
 │
 └── k8s/tetragon-policies/      # Runtime security (eBPF)
-\`\`\`
+```
 
 ---
 
@@ -94,34 +87,28 @@ imladris-project/
 
 ### Deploy
 
-\`\`\`bash
-# Clone
+```bash
 git clone https://github.com/ZEZE1020/imladris-project.git
 cd imladris-project/imladris-platform
 
-# Configure
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars
+# Edit terraform.tfvars with your values
 
-# Deploy
 terraform init
 terraform plan
 terraform apply
 
-# Connect to cluster
 aws eks update-kubeconfig --region us-east-1 --name imladris-demo-cluster
-\`\`\`
+```
 
 ### Validate Policies Locally
 
-\`\`\`bash
+```bash
 cd imladris-platform
 terraform plan -out=tfplan
 terraform show -json tfplan > tfplan.json
-
-# Run OPA policies
 conftest test tfplan.json -p ../imladris-governance/policies/terraform/
-\`\`\`
+```
 
 ---
 
@@ -149,11 +136,11 @@ GitHub Actions runs on every push/PR:
 | eks-endpoint-no-public-access | EKS API must be private |
 | root-access-key-check | No root account access keys |
 
-### Auto-Remediation Flow
+### Auto-Remediation
 
-\`\`\`
+```
 Violation Detected → AWS Config → EventBridge → Lambda/SSM → Fixed
-\`\`\`
+```
 
 Example: SSH rule opened to 0.0.0.0/0 is automatically revoked within minutes.
 
@@ -175,14 +162,14 @@ Example: SSH rule opened to 0.0.0.0/0 is automatically revoked within minutes.
 
 | Service | Monthly Cost |
 |---------|-------------|
-| EKS Control Plane | \$73 |
-| Fargate (minimal) | ~\$30 |
-| VPC Endpoints (4) | ~\$30 |
-| VPC Lattice | ~\$10 |
-| Config + CloudWatch | ~\$15 |
-| **Total** | **~\$160/month** |
+| EKS Control Plane | $73 |
+| Fargate (minimal) | ~$30 |
+| VPC Endpoints (4) | ~$30 |
+| VPC Lattice | ~$10 |
+| Config + CloudWatch | ~$15 |
+| **Total** | **~$160/month** |
 
-For demos: deploy, capture screenshots, destroy = ~\$2-5
+For demos: deploy, screenshot, destroy = ~$2-5
 
 ---
 
@@ -197,19 +184,8 @@ For demos: deploy, capture screenshots, destroy = ~\$2-5
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Run \`terraform validate\` and policy checks
-4. Submit a Pull Request
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
-
----
+See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
 MIT License - see [LICENSE](LICENSE)
-
----
-
-**Built for financial services where security is mandatory.**
