@@ -60,11 +60,11 @@ resource "aws_security_group" "harbor_registry" {
   }
 
   egress {
-    description = "DNS resolution"
+    description = "DNS resolution via VPC DNS"
     from_port   = 53
     to_port     = 53
     protocol    = "udp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["10.0.0.0/16"]  # VPC CIDR only - uses VPC DNS resolver
   }
 
   egress {
