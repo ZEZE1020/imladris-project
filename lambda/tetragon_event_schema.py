@@ -2,7 +2,7 @@
 # Comprehensive mapping of Tetragon eBPF events for parsing and filtering
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Union, Any
+from typing import Dict, List, Optional, Any
 from enum import Enum
 from datetime import datetime
 import json

@@ -5,11 +5,7 @@ import json
 import boto3
 import logging
 from datetime import datetime, timezone
-from tetragon_event_schema import (
-    EXAMPLE_PROCESS_EXEC_EVENT,
-    EXAMPLE_FILE_ACCESS_EVENT,
-    EXAMPLE_NETWORK_EVENT
-)
+
 
 logger = logging.getLogger(__name__)
 lambda_client = boto3.client('lambda')

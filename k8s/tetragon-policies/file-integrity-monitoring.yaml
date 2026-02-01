@@ -27,7 +27,7 @@ spec:
     - index: 3
       type: "loff_t"
     selectors:
-    # Protect critical system directories
+    # Protect critical system directories (only on host, not in containers)
     - matchArgs:
       - index: 0
         operator: "Prefix"
@@ -42,10 +42,18 @@ spec:
         - "/usr/lib/"
         - "/usr/lib64/"
         - "/boot/"
+      matchBinaries:
+      - operator: "NotIn"
+        values:
+        # Allow package managers and container builds
+        - "/usr/bin/apt"
+        - "/usr/bin/apt-get"
+        - "/usr/bin/yum"
+        - "/usr/bin/dnf"
+        - "/usr/bin/dpkg"
+        - "/usr/bin/rpm"
       matchActions:
-      - action: Deny      # Block the write operation
-        rateLimit: "1s"
-      - action: Post      # Log the attempt
+      - action: Post      # Log but allow writes (containers need to modify their own layers)
         rateLimit: "100ms"
 
     # Protect Kubernetes-specific paths
@@ -58,6 +66,13 @@ spec:
         - "/var/lib/docker/"
         - "/etc/kubernetes/"
         - "/etc/cni/"
+      matchBinaries:
+      - operator: "NotIn"
+        values:
+        # Allow Kubernetes and container runtime processes
+        - "/usr/bin/kubelet"
+        - "/usr/bin/containerd"
+        - "/usr/bin/dockerd"
       matchActions:
       - action: Deny
         rateLimit: "1s"
@@ -72,6 +87,12 @@ spec:
         - "/etc/containerd/config.toml"
         - "/etc/docker/daemon.json"
         - "/etc/crio/crio.conf"
+      matchBinaries:
+      - operator: "NotIn"
+        values:
+        # Allow runtime processes to update their own configs
+        - "/usr/bin/containerd"
+        - "/usr/bin/dockerd"
       matchActions:
       - action: Deny
         rateLimit: "1s"

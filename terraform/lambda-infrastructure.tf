@@ -122,6 +122,25 @@ resource "aws_s3_bucket_public_access_block" "security_logs" {
   restrict_public_buckets = true
 }
 
+# Store EKS cluster certificate authority data in Secrets Manager
+resource "aws_secretsmanager_secret" "eks_ca_data" {
+  name        = "${var.cluster_name}-eks-ca-certificate"
+  description = "EKS cluster certificate authority data for Lambda authentication"
+  kms_key_id  = aws_kms_key.eks_encryption.arn
+
+  tags = merge(var.tags, {
+    "Purpose" = "eks-authentication"
+  })
+}
+
+resource "aws_secretsmanager_secret_version" "eks_ca_data" {
+  secret_id     = aws_secretsmanager_secret.eks_ca_data.id
+  secret_string = jsonencode({
+    ca_data  = aws_eks_cluster.security_cluster.certificate_authority[0].data
+    endpoint = aws_eks_cluster.security_cluster.endpoint
+  })
+}
+
 # SNS topic for security alerts
 resource "aws_sns_topic" "security_alerts" {
   name              = "${var.cluster_name}-security-alerts"
@@ -167,7 +186,7 @@ resource "aws_lambda_function" "drift_enforcement" {
       SNS_TOPIC_ARN             = aws_sns_topic.security_alerts.arn
       QUARANTINE_NAMESPACE      = "security-quarantine"
       EKS_ENDPOINT              = aws_eks_cluster.security_cluster.endpoint
-      EKS_CA_DATA               = aws_eks_cluster.security_cluster.certificate_authority[0].data
+      EKS_CA_SECRET_ARN         = aws_secretsmanager_secret.eks_ca_data.arn
       AWS_DEFAULT_REGION        = var.region
       LOG_LEVEL                 = "INFO"
       REGIONAL_ENFORCEMENT      = var.regional_enforcement_enabled
@@ -230,15 +249,26 @@ resource "aws_lambda_layer_version" "kubernetes_layer" {
   description = "Kubernetes Python client library for Lambda"
 }
 
-# Create Kubernetes layer with dependencies
+# Create Kubernetes layer with dependencies properly installed
+resource "null_resource" "build_lambda_layer" {
+  triggers = {
+    requirements = filemd5("${path.module}/../lambda/requirements.txt")
+  }
+
+  provisioner "local-exec" {
+    command = <<EOF
+      mkdir -p ${path.module}/kubernetes-layer/python
+      pip install -r ${path.module}/../lambda/requirements.txt -t ${path.module}/kubernetes-layer/python/
+    EOF
+  }
+}
+
 data "archive_file" "kubernetes_layer_zip" {
   type        = "zip"
+  source_dir  = "${path.module}/kubernetes-layer"
   output_path = "${path.module}/kubernetes-layer.zip"
 
-  source {
-    content  = "kubernetes==28.1.0\nbotocore\nboto3"
-    filename = "requirements.txt"
-  }
+  depends_on = [null_resource.build_lambda_layer]
 }
 
 # Security group for Lambda function
@@ -372,6 +402,15 @@ resource "aws_iam_role_policy" "drift_enforcement_lambda_policy" {
           "s3:PutObjectAcl"
         ]
         Resource = "${aws_s3_bucket.security_logs.arn}/*"
+      },
+
+      # Secrets Manager permissions for EKS CA data
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = aws_secretsmanager_secret.eks_ca_data.arn
       }
     ]
   })

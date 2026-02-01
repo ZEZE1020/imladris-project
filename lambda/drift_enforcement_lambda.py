@@ -7,12 +7,12 @@ import boto3
 import base64
 import gzip
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from datetime import datetime
 import ipaddress
 from kubernetes import client, config
 from tetragon_event_schema import (
-    TetragonEvent, EventType, ActionType,
+    TetragonEvent,
     EXAMPLE_PROCESS_EXEC_EVENT, EXAMPLE_FILE_ACCESS_EVENT, EXAMPLE_NETWORK_EVENT
 )
 
@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 # AWS clients
 cloudwatch = boto3.client('logs')
 sns = boto3.client('sns')
+secretsmanager = boto3.client('secretsmanager')
 
 # Environment variables
 CLUSTER_NAME = os.environ.get('CLUSTER_NAME', 'security-drift-engine')
@@ -30,7 +31,7 @@ KISUMU_VPC_CIDRS = os.environ.get('KISUMU_VPC_CIDRS', '10.100.0.0/16,172.31.100.
 SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN')
 QUARANTINE_NAMESPACE = os.environ.get('QUARANTINE_NAMESPACE', 'security-quarantine')
 EKS_ENDPOINT = os.environ.get('EKS_ENDPOINT')
-EKS_CA_DATA = os.environ.get('EKS_CA_DATA')
+EKS_CA_SECRET_ARN = os.environ.get('EKS_CA_SECRET_ARN')
 
 class PodQuarantineManager:
     """Manages pod isolation and quarantine operations"""
@@ -44,11 +45,14 @@ class PodQuarantineManager:
         """Initialize Kubernetes API clients"""
         try:
             # Load kubeconfig from environment or use in-cluster config
-            if EKS_ENDPOINT and EKS_CA_DATA:
+            if EKS_ENDPOINT and EKS_CA_SECRET_ARN:
+                # Retrieve EKS CA data from Secrets Manager
+                eks_ca_data = self._get_eks_ca_from_secrets_manager()
+                
                 # Configure from environment (Lambda environment)
                 configuration = client.Configuration()
                 configuration.host = EKS_ENDPOINT
-                configuration.ssl_ca_cert = self._write_ca_cert()
+                configuration.ssl_ca_cert = self._write_ca_cert(eks_ca_data)
                 configuration.api_key_prefix['authorization'] = 'Bearer'
 
                 # Get AWS EKS token
@@ -71,11 +75,21 @@ class PodQuarantineManager:
             logger.error(f"Failed to initialize Kubernetes clients: {e}")
             raise
 
-    def _write_ca_cert(self) -> str:
+    def _get_eks_ca_from_secrets_manager(self) -> str:
+        """Retrieve EKS CA certificate data from AWS Secrets Manager"""
+        try:
+            response = secretsmanager.get_secret_value(SecretId=EKS_CA_SECRET_ARN)
+            secret_data = json.loads(response['SecretString'])
+            return secret_data['ca_data']
+        except Exception as e:
+            logger.error(f"Failed to retrieve EKS CA from Secrets Manager: {e}")
+            raise
+
+    def _write_ca_cert(self, eks_ca_data: str) -> str:
         """Write CA certificate to temporary file"""
         ca_cert_path = '/tmp/ca.crt'
         with open(ca_cert_path, 'w') as f:
-            f.write(base64.b64decode(EKS_CA_DATA).decode('utf-8'))
+            f.write(base64.b64decode(eks_ca_data).decode('utf-8'))
         return ca_cert_path
 
     def _get_eks_token(self, cluster_name: str, credentials) -> str:

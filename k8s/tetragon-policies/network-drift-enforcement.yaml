@@ -20,13 +20,13 @@ spec:
     - index: 0
       type: "sock"
     selectors:
-    # Block connections to unauthorized external CIDRs
+    # Monitor outbound connections (changed from blocking all to logging)
     - matchArgs:
       - index: 0
         operator: "DAddr"
         values:
-        # Block connections to suspicious/malicious ranges
-        - "0.0.0.0/0"      # Block all by default - use allowlist
+        # Log external connections for monitoring
+        - "0.0.0.0/0"
       matchBinaries:
       - operator: "NotIn"
         values:
@@ -39,9 +39,7 @@ spec:
         - "/usr/bin/systemd-resolved"
         - "/usr/sbin/chronyd"
       matchActions:
-      - action: Deny      # Block unauthorized TCP connections
-        rateLimit: "1s"
-      - action: Post
+      - action: Post      # Log but allow external connections
         rateLimit: "100ms"
 
     # Allow specific legitimate ranges
@@ -75,7 +73,7 @@ spec:
     - index: 2
       type: "size_t"
     selectors:
-    # Monitor DNS queries to unauthorized servers
+    # Monitor DNS queries (changed from Deny to Post for logging only)
     - matchArgs:
       - index: 0
         operator: "DPort"
@@ -84,7 +82,7 @@ spec:
       - index: 0
         operator: "DAddr"
         values:
-        # Block DNS to unauthorized resolvers
+        # Log queries to public DNS servers (allow but monitor)
         - "8.8.8.8"         # Google DNS
         - "8.8.4.4"         # Google DNS
         - "1.1.1.1"         # Cloudflare DNS
@@ -92,9 +90,8 @@ spec:
         - "208.67.222.222"  # OpenDNS
         - "208.67.220.220"  # OpenDNS
       matchActions:
-      - action: Deny      # Block unauthorized DNS queries
-        rateLimit: "1s"
-      - action: Post
+      - action: Post      # Log but allow public DNS queries
+        rateLimit: "100ms"
 
     # Allow corporate DNS servers
     - matchArgs:

@@ -55,12 +55,8 @@ cat >> /etc/security/limits.d/99-ebpf.conf << EOF
 *    hard memlock unlimited
 EOF
 
-# Install additional tools for debugging and monitoring
+# Install additional tools for monitoring (excluding tools blocked by security policies)
 yum install -y \
-    perf \
-    bpftrace \
-    strace \
-    tcpdump \
     iotop \
     htop
 

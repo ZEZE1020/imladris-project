@@ -165,35 +165,18 @@ variable "process_blacklist" {
   description = "List of process names to block with SIGKILL"
   type        = list(string)
   default = [
+    # Network scanning and enumeration tools
     "netcat",
     "nc",
     "nmap",
-    "wget",
-    "curl",
-    "apt",
-    "apt-get",
-    "yum",
-    "dnf",
-    "pip",
-    "pip3",
-    "npm",
-    "gem",
-    "composer",
-    "bash",
-    "sh",
-    "zsh",
-    "fish",
-    "tcpdump",
-    "wireshark",
-    "strace",
-    "gdb",
-    "ssh",
-    "scp",
-    "rsync",
-    "socat",
+    # Legacy protocols
     "telnet",
     "ftp",
-    "tftp"
+    "tftp",
+    # Reverse shells and tunneling
+    "socat",
+    # Note: bash, sh, curl, wget, apt, yum, pip, npm are allowed for legitimate workloads
+    # Use namespace-specific policies for stricter enforcement
   ]
 }
 
@@ -234,7 +217,8 @@ variable "blocked_egress_cidrs" {
   description = "CIDR blocks to block for egress traffic (suspicious/malicious)"
   type        = list(string)
   default = [
-    "0.0.0.0/0" # Block all by default - whitelist specific ranges
+    # Block known malicious ranges - monitor HTTPS egress instead of blocking all
+    # Examples: Add specific malicious IP ranges here as needed
   ]
 }
 
