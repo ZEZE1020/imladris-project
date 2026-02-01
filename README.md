@@ -1,9 +1,22 @@
 # Imladris: Zero Trust Banking Platform
 
-[![Terraform](https://img.shields.io/badge/Terraform-1.0+-purple.svg)](https://www.terraform.io/)
-[![AWS](https://img.shields.io/badge/AWS-EKS%20%7C%20VPC%20Lattice-orange.svg)](https://aws.amazon.com/)
+<!-- CI/CD Status Badges -->
+[![Terraform CI](https://github.com/ZEZE1020/imladris-project/actions/workflows/terraform-ci.yml/badge.svg)](https://github.com/ZEZE1020/imladris-project/actions/workflows/terraform-ci.yml)
+[![tfsec](https://github.com/ZEZE1020/imladris-project/actions/workflows/terraform-ci.yml/badge.svg?event=push)](https://github.com/ZEZE1020/imladris-project/security/code-scanning)
+
+<!-- Technology Badges -->
+[![Terraform](https://img.shields.io/badge/Terraform-1.6+-purple.svg?logo=terraform)](https://www.terraform.io/)
+[![AWS](https://img.shields.io/badge/AWS-EKS%20%7C%20VPC%20Lattice-orange.svg?logo=amazon-aws)](https://aws.amazon.com/)
+[![OPA](https://img.shields.io/badge/Policy-OPA%2FRego-green.svg?logo=openpolicyagent)](https://www.openpolicyagent.org/)
+
+<!-- Security & Compliance Badges -->
+[![Security Scan](https://img.shields.io/badge/Security-tfsec-blue.svg?logo=aquasecurity)](https://aquasecurity.github.io/tfsec/)
+[![Checkov](https://img.shields.io/badge/Compliance-Checkov-green.svg?logo=paloaltonetworks)](https://www.checkov.io/)
+[![Infrastructure Tests](https://img.shields.io/badge/Tests-Conftest-yellow.svg)](https://www.conftest.dev/)
+
+<!-- Project Info -->
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![OPA](https://img.shields.io/badge/Policy-OPA%2FRego-green.svg)](https://www.openpolicyagent.org/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 A production-grade **Internal Developer Platform (IDP)** reference architecture for investment banks, implementing zero-trust networking, policy-as-code governance, and automated compliance on AWS.
 
