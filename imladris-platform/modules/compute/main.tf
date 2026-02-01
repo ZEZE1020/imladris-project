@@ -71,6 +71,10 @@ resource "aws_eks_fargate_profile" "main" {
   }
 
   selector {
+    namespace = "banking-ui"
+  }
+
+  selector {
     namespace = "argocd"
   }
 
@@ -96,7 +100,7 @@ resource "aws_security_group" "eks_cluster" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["10.0.0.0/16"]  # VPC CIDR only - Zero Trust
   }
 
   tags = {
