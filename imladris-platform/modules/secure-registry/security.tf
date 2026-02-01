@@ -64,6 +64,15 @@ resource "aws_security_group" "harbor_registry" {
     from_port   = 53
     to_port     = 53
     protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "NTP for time synchronization"
+    from_port   = 123
+    to_port     = 123
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
     cidr_blocks = ["10.0.0.0/16"]  # VPC CIDR only
   }
 

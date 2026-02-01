@@ -211,17 +211,18 @@ data:
     end
 
     function is_ip_in_cidr(ip, cidr)
-        -- Simple CIDR check (would use proper library in production)
+        -- Simple CIDR check using string-based comparison
         local network, prefix = cidr:match("([^/]+)/(%d+)")
         if not network or not prefix then
             return false
         end
 
-        -- Convert to numeric representation for comparison
+        -- Convert IP to numeric representation for comparison (Lua 5.1 compatible)
         local function ip_to_num(ip_str)
             local a, b, c, d = ip_str:match("(%d+)%.(%d+)%.(%d+)%.(%d+)")
             if not a then return nil end
-            return (a << 24) + (b << 16) + (c << 8) + d
+            a, b, c, d = tonumber(a), tonumber(b), tonumber(c), tonumber(d)
+            return a * 16777216 + b * 65536 + c * 256 + d
         end
 
         local ip_num = ip_to_num(ip)
@@ -231,8 +232,12 @@ data:
             return false
         end
 
-        local mask = (0xFFFFFFFF << (32 - tonumber(prefix))) & 0xFFFFFFFF
-        return (ip_num & mask) == (network_num & mask)
+        local prefix_num = tonumber(prefix)
+        local shift = 32 - prefix_num
+        local divisor = math.pow(2, shift)
+        local mask = math.floor(4294967295 / divisor) * divisor
+
+        return math.floor(ip_num / divisor) == math.floor(network_num / divisor)
     end
 
 ---
