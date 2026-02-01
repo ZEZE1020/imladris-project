@@ -178,6 +178,7 @@ jobs:
         uses: infracost/actions/setup@v3
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
+        continue-on-error: true
 
       - name: Generate Infracost JSON
         run: |
@@ -187,8 +188,8 @@ jobs:
         continue-on-error: true
 
       - name: Post Infracost comment
-        if: ${{ secrets.INFRACOST_API_KEY }}
         uses: infracost/actions/comment@v3
+        continue-on-error: true
         with:
           path: /tmp/infracost.json
           behavior: update
