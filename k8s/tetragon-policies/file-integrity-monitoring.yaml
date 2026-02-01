@@ -1,0 +1,431 @@
+# File Integrity Monitoring (FIM) Policy
+# Monitors and enforces unauthorized file system modifications
+# Uses kprobes on VFS layer and security subsystem hooks
+
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: file-integrity-monitoring
+  namespace: kube-system
+  labels:
+    app: tetragon
+    policy-type: file-integrity
+    severity: critical
+spec:
+  # VFS write operations monitoring
+  kprobes:
+  - call: "vfs_write"
+    syscall: false
+    args:
+    - index: 0
+      type: "file"
+    - index: 1
+      type: "char_buff"
+      sizeArgIndex: 2
+    - index: 2
+      type: "size_t"
+    - index: 3
+      type: "loff_t"
+    selectors:
+    # Protect critical system directories (only on host, not in containers)
+    - matchArgs:
+      - index: 0
+        operator: "Prefix"
+        values:
+        - "/etc/"
+        - "/bin/"
+        - "/sbin/"
+        - "/lib/"
+        - "/lib64/"
+        - "/usr/bin/"
+        - "/usr/sbin/"
+        - "/usr/lib/"
+        - "/usr/lib64/"
+        - "/boot/"
+      matchBinaries:
+      - operator: "NotIn"
+        values:
+        # Allow package managers and container builds
+        - "/usr/bin/apt"
+        - "/usr/bin/apt-get"
+        - "/usr/bin/yum"
+        - "/usr/bin/dnf"
+        - "/usr/bin/dpkg"
+        - "/usr/bin/rpm"
+      matchActions:
+      - action: Post      # Log but allow writes (containers need to modify their own layers)
+        rateLimit: "100ms"
+
+    # Protect Kubernetes-specific paths
+    - matchArgs:
+      - index: 0
+        operator: "Prefix"
+        values:
+        - "/var/lib/kubelet/"
+        - "/var/lib/containerd/"
+        - "/var/lib/docker/"
+        - "/etc/kubernetes/"
+        - "/etc/cni/"
+      matchBinaries:
+      - operator: "NotIn"
+        values:
+        # Allow Kubernetes and container runtime processes
+        - "/usr/bin/kubelet"
+        - "/usr/bin/containerd"
+        - "/usr/bin/dockerd"
+      matchActions:
+      - action: Deny
+        rateLimit: "1s"
+      - action: Post
+        rateLimit: "100ms"
+
+    # Protect container runtime configurations
+    - matchArgs:
+      - index: 0
+        operator: "Equal"
+        values:
+        - "/etc/containerd/config.toml"
+        - "/etc/docker/daemon.json"
+        - "/etc/crio/crio.conf"
+      matchBinaries:
+      - operator: "NotIn"
+        values:
+        # Allow runtime processes to update their own configs
+        - "/usr/bin/containerd"
+        - "/usr/bin/dockerd"
+      matchActions:
+      - action: Deny
+        rateLimit: "1s"
+      - action: Post
+
+  # File permission changes monitoring
+  - call: "security_inode_setattr"
+    syscall: false
+    args:
+    - index: 0
+      type: "dentry"
+    - index: 1
+      type: "iattr"
+    selectors:
+    # Monitor changes to critical binaries
+    - matchArgs:
+      - index: 0
+        operator: "Prefix"
+        values:
+        - "/bin/"
+        - "/sbin/"
+        - "/usr/bin/"
+        - "/usr/sbin/"
+      matchActions:
+      - action: Deny      # Block permission changes to system binaries
+        rateLimit: "1s"
+      - action: Post
+
+    # Monitor setuid/setgid attempts
+    - matchArgs:
+      - index: 1
+        operator: "Mask"
+        values:
+        - "0x800"   # S_ISUID
+        - "0x400"   # S_ISGID
+      matchActions:
+      - action: Deny      # Block setuid/setgid on any file
+        rateLimit: "1s"
+      - action: Post
+
+  # File creation monitoring in protected directories
+  - call: "security_inode_create"
+    syscall: false
+    args:
+    - index: 0
+      type: "inode"
+    - index: 1
+      type: "dentry"
+    - index: 2
+      type: "umode_t"
+    selectors:
+    # Block file creation in system directories
+    - matchArgs:
+      - index: 1
+        operator: "Prefix"
+        values:
+        - "/bin/"
+        - "/sbin/"
+        - "/etc/passwd"
+        - "/etc/shadow"
+        - "/etc/sudoers"
+        - "/etc/crontab"
+        - "/etc/ssh/"
+      matchActions:
+      - action: Deny
+        rateLimit: "1s"
+      - action: Post
+
+  # File deletion monitoring
+  - call: "security_inode_unlink"
+    syscall: false
+    args:
+    - index: 0
+      type: "inode"
+    - index: 1
+      type: "dentry"
+    selectors:
+    # Block deletion of critical system files
+    - matchArgs:
+      - index: 1
+        operator: "Prefix"
+        values:
+        - "/bin/"
+        - "/sbin/"
+        - "/usr/bin/"
+        - "/usr/sbin/"
+        - "/lib/"
+        - "/lib64/"
+        - "/etc/passwd"
+        - "/etc/shadow"
+        - "/etc/hosts"
+        - "/etc/resolv.conf"
+      matchActions:
+      - action: Deny
+        rateLimit: "1s"
+      - action: Post
+
+  # Extended attribute monitoring (often used in attacks)
+  - call: "security_inode_setxattr"
+    syscall: false
+    args:
+    - index: 0
+      type: "dentry"
+    - index: 1
+      type: "string"
+      sizeArgIndex: 2
+    - index: 2
+      type: "void"
+      sizeArgIndex: 3
+    - index: 3
+      type: "size_t"
+    - index: 4
+      type: "int"
+    selectors:
+    # Monitor security-related extended attributes
+    - matchArgs:
+      - index: 1
+        operator: "Equal"
+        values:
+        - "security.selinux"
+        - "security.apparmor"
+        - "security.capability"
+        - "user.pax.flags"
+      matchActions:
+      - action: Deny      # Block security attribute modifications
+        rateLimit: "1s"
+      - action: Post
+
+---
+# Advanced File Monitoring for Configuration Drift
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: configuration-drift-detection
+  namespace: kube-system
+  labels:
+    app: tetragon
+    policy-type: config-drift
+    severity: high
+spec:
+  # Monitor specific configuration files critical for security
+  kprobes:
+  - call: "vfs_open"
+    syscall: false
+    args:
+    - index: 0
+      type: "path"
+    - index: 1
+      type: "file"
+    selectors:
+    # Critical configuration files
+    - matchArgs:
+      - index: 0
+        operator: "Equal"
+        values:
+        - "/etc/passwd"
+        - "/etc/shadow"
+        - "/etc/group"
+        - "/etc/sudoers"
+        - "/etc/ssh/sshd_config"
+        - "/etc/pam.conf"
+        - "/etc/security/limits.conf"
+        - "/etc/hosts"
+        - "/etc/resolv.conf"
+        - "/etc/nsswitch.conf"
+        - "/etc/ld.so.conf"
+        - "/etc/profile"
+        - "/etc/bash.bashrc"
+        - "/etc/environment"
+      matchActions:
+      - action: Post      # Log access to critical config files
+        rateLimit: "1s"
+
+    # Kubernetes configuration files
+    - matchArgs:
+      - index: 0
+        operator: "Prefix"
+        values:
+        - "/etc/kubernetes/"
+        - "/var/lib/kubelet/config.yaml"
+        - "/etc/systemd/system/kubelet.service"
+        - "/etc/cni/net.d/"
+      matchActions:
+      - action: Post
+        rateLimit: "1s"
+
+    # Container runtime configurations
+    - matchArgs:
+      - index: 0
+        operator: "Equal"
+        values:
+        - "/etc/containerd/config.toml"
+        - "/etc/docker/daemon.json"
+        - "/etc/crio/crio.conf"
+        - "/etc/systemd/system/docker.service"
+        - "/etc/systemd/system/containerd.service"
+      matchActions:
+      - action: Post
+        rateLimit: "1s"
+
+  # Monitor file renames that could indicate tampering
+  - call: "security_inode_rename"
+    syscall: false
+    args:
+    - index: 0
+      type: "inode"
+    - index: 1
+      type: "dentry"
+    - index: 2
+      type: "inode"
+    - index: 3
+      type: "dentry"
+    selectors:
+    # Block renaming of system binaries
+    - matchArgs:
+      - index: 1
+        operator: "Prefix"
+        values:
+        - "/bin/"
+        - "/sbin/"
+        - "/usr/bin/"
+        - "/usr/sbin/"
+      matchActions:
+      - action: Deny
+        rateLimit: "1s"
+      - action: Post
+
+    # Monitor backup file creation (common in attacks)
+    - matchArgs:
+      - index: 3
+        operator: "Suffix"
+        values:
+        - ".bak"
+        - ".orig"
+        - ".old"
+        - ".backup"
+        - "~"
+      matchPIDs:
+      - operator: "NotIn"
+        followForks: false
+        values:
+        - 1  # Allow init process
+      matchActions:
+      - action: Post      # Log but allow backup creation
+
+---
+# Real-time File Hash Verification
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: binary-integrity-verification
+  namespace: kube-system
+  labels:
+    app: tetragon
+    policy-type: integrity-check
+    severity: critical
+spec:
+  # Monitor execution of critical binaries
+  kprobes:
+  - call: "security_bprm_check"
+    syscall: false
+    args:
+    - index: 0
+      type: "linux_binprm"
+    selectors:
+    # Critical system binaries that should never change
+    - matchBinaries:
+      - operator: "In"
+        values:
+        - "/bin/bash"
+        - "/bin/sh"
+        - "/usr/bin/sudo"
+        - "/usr/bin/su"
+        - "/usr/sbin/sshd"
+        - "/usr/bin/ssh"
+        - "/usr/bin/kubelet"
+        - "/usr/bin/containerd"
+        - "/usr/bin/runc"
+        - "/usr/bin/dockerd"
+        - "/usr/bin/crio"
+      matchActions:
+      - action: Post      # Log execution of critical binaries
+        rateLimit: "1s"
+
+  # Monitor library loading for shared object tampering
+  - call: "security_kernel_module_request"
+    syscall: false
+    args:
+    - index: 0
+      type: "string"
+      sizeArgIndex: 1
+    selectors:
+    # Block loading of unsigned or suspicious modules
+    - matchArgs:
+      - index: 0
+        operator: "Regex"
+        values:
+        - ".*\\.ko$"        # Kernel modules
+        - ".*rootkit.*"     # Rootkit-named modules
+        - ".*backdoor.*"    # Backdoor-named modules
+      matchActions:
+      - action: Deny      # Block suspicious module loading
+        rateLimit: "1s"
+      - action: Post
+
+  # Monitor dynamic library loading
+  - call: "security_file_mmap"
+    syscall: false
+    args:
+    - index: 0
+      type: "file"
+    - index: 1
+      type: "unsigned long"
+    - index: 2
+      type: "unsigned long"
+    - index: 3
+      type: "unsigned long"
+    selectors:
+    # Monitor mapping of shared libraries
+    - matchArgs:
+      - index: 0
+        operator: "Suffix"
+        values:
+        - ".so"
+        - ".so.1"
+        - ".so.2"
+        - ".so.6"
+      matchArgs:
+      - index: 1
+        operator: "Mask"
+        values:
+        - "0x1"     # PROT_READ
+        - "0x4"     # PROT_EXEC
+      matchActions:
+      - action: Post      # Log shared library loading
+        rateLimit: "5s"

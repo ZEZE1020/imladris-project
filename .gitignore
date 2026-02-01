@@ -1,1 +1,101 @@
+# Real-Time Infrastructure Drift & Runtime Enforcement Engine
+# .gitignore file
+
+# Terraform files
+*.tfstate
+*.tfstate.*
+*.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.tfplan
+
+# Lambda deployment packages
+*.zip
+lambda-deployment.zip
+kubernetes-layer.zip
+test-lambda.zip
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
+.env
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
+
+# AWS
+.aws/
+credentials
+
+# Sensitive files
+*.pem
+*.key
+*.crt
+secrets.yaml
+secrets/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Response files from tests
+response.json
+test-response.json
+kisumu-test.json
+
+# Backup files
+*.backup
+*.bak
+*.orig
+
+# Cache directories
+.cache/
+.pytest_cache/
 tfvenv
