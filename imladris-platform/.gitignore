@@ -4,7 +4,7 @@
 *.tfplan
 *.tfplan.*
 .terraform/
-.terraform.lock.hcl
+# Keep .terraform.lock.hcl - it should be committed for reproducible builds
 
 # Variable files with sensitive data
 terraform.tfvars
