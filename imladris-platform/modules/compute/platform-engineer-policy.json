@@ -1,0 +1,29 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:*",
+        "eks:*",
+        "iam:*",
+        "vpc-lattice:*",
+        "config:*",
+        "events:*",
+        "ssm:*",
+        "cloudwatch:*",
+        "logs:*",
+        "ecr:*",
+        "kms:*",
+        "s3:*",
+        "sso:*",
+        "sso-admin:*",
+        "identitystore:*",
+        "lambda:*",
+        "sns:*",
+        "sts:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

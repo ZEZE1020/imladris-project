@@ -1,0 +1,443 @@
+# Kubernetes RBAC Configuration
+# Zero Trust Banking Platform - User Access Control
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: banking-core
+  labels:
+    name: banking-core
+    tier: application
+    team: backend
+    compliance: pci-dss
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: banking-ui
+  labels:
+    name: banking-ui
+    tier: frontend
+    team: frontend
+    compliance: pci-dss
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-monitoring
+  labels:
+    name: platform-monitoring
+    tier: platform
+    team: devops
+---
+# ===== CLUSTER ROLES =====
+
+# FinOps Analyst - Read-only cluster access
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: finops-analyst
+rules:
+- apiGroups: [""]
+  resources: ["nodes", "namespaces", "pods", "services", "persistentvolumes"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["nodes", "pods"]
+  verbs: ["get", "list"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies"]
+  verbs: ["get", "list", "watch"]
+
+---
+# Senior DevOps - Full cluster admin
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: senior-devops
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+
+---
+# Junior DevOps - Limited cluster access
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: junior-devops
+rules:
+- apiGroups: [""]
+  resources: ["nodes", "namespaces", "pods", "services", "events", "configmaps"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+  verbs: ["get", "list", "watch", "patch"]
+- apiGroups: [""]
+  resources: ["pods/log", "pods/exec"]
+  verbs: ["get", "list", "create"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["nodes", "pods"]
+  verbs: ["get", "list"]
+
+---
+# Backend Developer - Application deployment in banking-core
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: banking-core
+  name: backend-developer
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets", "persistentvolumeclaims"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["pods/log", "pods/exec"]
+  verbs: ["get", "list", "create"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+# Frontend Developer - Application deployment in banking-ui
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: banking-ui
+  name: frontend-developer
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets", "persistentvolumeclaims"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["pods/log", "pods/exec"]
+  verbs: ["get", "list", "create"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+# ===== CLUSTER ROLE BINDINGS =====
+
+# FinOps Analyst binding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: finops-analyst-binding
+subjects:
+- kind: User
+  name: sarah.finops@imladris.bank
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: finops-analyst
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Senior DevOps binding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: senior-devops-binding
+subjects:
+- kind: User
+  name: alex.devops@imladris.bank
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: senior-devops
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Junior DevOps binding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: junior-devops-binding
+subjects:
+- kind: User
+  name: jamie.devops@imladris.bank
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: junior-devops
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# ===== ROLE BINDINGS =====
+
+# Backend Developer binding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backend-developer-binding
+  namespace: banking-core
+subjects:
+- kind: User
+  name: mike.dev@imladris.bank
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: backend-developer
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Frontend Developer binding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: frontend-developer-binding
+  namespace: banking-ui
+subjects:
+- kind: User
+  name: lisa.dev@imladris.bank
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: frontend-developer
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# ===== NETWORK POLICIES =====
+
+# Default deny all for banking-core namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: banking-core
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+
+---
+# Allow banking-core internal communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-banking-core-internal
+  namespace: banking-core
+spec:
+  podSelector:
+    matchLabels:
+      tier: application
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: banking-core
+    - namespaceSelector:
+        matchLabels:
+          name: banking-ui
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: banking-core
+    - namespaceSelector:
+        matchLabels:
+          name: banking-ui
+  # Allow DNS
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow HTTPS to AWS services
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+
+---
+# Default deny all for banking-ui namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: banking-ui
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+
+---
+# Allow banking-ui to banking-core communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ui-to-core
+  namespace: banking-ui
+spec:
+  podSelector:
+    matchLabels:
+      tier: frontend
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: banking-core
+    ports:
+    - protocol: TCP
+      port: 8080
+  # Allow DNS
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow HTTPS to AWS services
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+
+---
+# ===== POD SECURITY POLICIES =====
+
+# Banking Core Pod Security Policy
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: banking-core-psp
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+  readOnlyRootFilesystem: true
+
+---
+# Banking UI Pod Security Policy
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: banking-ui-psp
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+  readOnlyRootFilesystem: true
+
+---
+# ===== RESOURCE QUOTAS =====
+
+# Banking Core Resource Quota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: banking-core-quota
+  namespace: banking-core
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: 8Gi
+    limits.cpu: "8"
+    limits.memory: 16Gi
+    persistentvolumeclaims: "10"
+    pods: "20"
+    services: "10"
+
+---
+# Banking UI Resource Quota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: banking-ui-quota
+  namespace: banking-ui
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 4Gi
+    limits.cpu: "4"
+    limits.memory: 8Gi
+    persistentvolumeclaims: "5"
+    pods: "10"
+    services: "5"
+
+---
+# ===== LIMIT RANGES =====
+
+# Banking Core Limit Range
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: banking-core-limits
+  namespace: banking-core
+spec:
+  limits:
+  - default:
+      cpu: "500m"
+      memory: "512Mi"
+      ephemeral-storage: "1Gi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "128Mi"
+      ephemeral-storage: "100Mi"
+    type: Container
+
+---
+# Banking UI Limit Range
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: banking-ui-limits
+  namespace: banking-ui
+spec:
+  limits:
+  - default:
+      cpu: "300m"
+      memory: "256Mi"
+      ephemeral-storage: "500Mi"
+    defaultRequest:
+      cpu: "50m"
+      memory: "64Mi"
+      ephemeral-storage: "50Mi"
+    type: Container
