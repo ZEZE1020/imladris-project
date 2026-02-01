@@ -98,4 +98,26 @@ kisumu-test.json
 # Cache directories
 .cache/
 .pytest_cache/
-tfvenv
+
+# Python virtual environments (project specific)
+tfvenv/
+
+# Internal/Draft documentation (not for version control)
+BLOG_DRAFT.md
+BLOG_OUTLINE.md
+CRITICAL-FIXES.md
+FINAL-STATUS.md
+demo-fixes.md
+platform-only-fixes.md
+DEPLOY-NOW.md
+READY-TO-DEPLOY.md
+DEPLOYMENT_REVIEW.md
+DEPLOYMENT-CHECKLIST.md
+DEPLOYMENT-GUIDE.md
+
+# Architecture diagram debug files
+.infracodebase/*.debug.txt
+
+# Root level terraform artifacts (use imladris-platform/ instead)
+/.terraform/
+/.terraform.lock.hcl
