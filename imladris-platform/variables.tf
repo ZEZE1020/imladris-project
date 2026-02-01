@@ -29,6 +29,7 @@ variable "eks_version" {
 }
 
 variable "identity_center_instance_arn" {
-  description = "AWS IAM Identity Center instance ARN"
+  description = "AWS IAM Identity Center instance ARN (optional - leave empty to skip Identity Center setup)"
   type        = string
+  default     = ""
 }

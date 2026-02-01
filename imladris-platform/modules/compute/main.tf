@@ -155,8 +155,10 @@ resource "aws_iam_role_policy_attachment" "fargate_pod_execution_role_policy" {
   role       = aws_iam_role.fargate_pod_execution_role.name
 }
 
-# IAM Identity Center Permission Set for Platform Engineers
+# IAM Identity Center Permission Set for Platform Engineers (optional)
 resource "aws_ssoadmin_permission_set" "platform_engineers" {
+  count = var.identity_center_instance_arn != "" ? 1 : 0
+
   instance_arn     = var.identity_center_instance_arn
   name             = "ImladrisPlatformEngineers"
   description      = "Platform engineers access to Imladris EKS cluster"
@@ -164,15 +166,19 @@ resource "aws_ssoadmin_permission_set" "platform_engineers" {
 }
 
 resource "aws_ssoadmin_managed_policy_attachment" "platform_engineers_eks" {
+  count = var.identity_center_instance_arn != "" ? 1 : 0
+
   instance_arn       = var.identity_center_instance_arn
   managed_policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  permission_set_arn = aws_ssoadmin_permission_set.platform_engineers.arn
+  permission_set_arn = aws_ssoadmin_permission_set.platform_engineers[0].arn
 }
 
-# EKS Access Entry for Identity Center Users
+# EKS Access Entry for Identity Center Users (optional)
 resource "aws_eks_access_entry" "platform_engineers" {
+  count = var.identity_center_instance_arn != "" ? 1 : 0
+
   cluster_name      = aws_eks_cluster.main.name
-  principal_arn     = aws_ssoadmin_permission_set.platform_engineers.arn
+  principal_arn     = aws_ssoadmin_permission_set.platform_engineers[0].arn
   kubernetes_groups = ["system:masters"]
   type             = "STANDARD"
 }

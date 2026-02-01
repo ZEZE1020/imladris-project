@@ -54,6 +54,6 @@ output "kms_key_arn" {
 }
 
 output "identity_center_permission_set_arn" {
-  description = "IAM Identity Center Permission Set ARN"
-  value       = aws_ssoadmin_permission_set.platform_engineers.arn
+  description = "IAM Identity Center Permission Set ARN (empty if Identity Center not configured)"
+  value       = length(aws_ssoadmin_permission_set.platform_engineers) > 0 ? aws_ssoadmin_permission_set.platform_engineers[0].arn : ""
 }
