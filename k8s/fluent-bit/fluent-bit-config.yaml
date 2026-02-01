@@ -234,9 +234,10 @@ data:
 
         local prefix_num = tonumber(prefix)
         local shift = 32 - prefix_num
-        local mask = math.floor(4294967295 / math.pow(2, shift)) * math.pow(2, shift)
-        
-        return math.floor(ip_num / math.pow(2, shift)) == math.floor(network_num / math.pow(2, shift))
+        local divisor = math.pow(2, shift)
+        local mask = math.floor(4294967295 / divisor) * divisor
+
+        return math.floor(ip_num / divisor) == math.floor(network_num / divisor)
     end
 
 ---

@@ -48,7 +48,7 @@ class PodQuarantineManager:
             if EKS_ENDPOINT and EKS_CA_SECRET_ARN:
                 # Retrieve EKS CA data from Secrets Manager
                 eks_ca_data = self._get_eks_ca_from_secrets_manager()
-                
+
                 # Configure from environment (Lambda environment)
                 configuration = client.Configuration()
                 configuration.host = EKS_ENDPOINT
