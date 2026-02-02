@@ -117,6 +117,13 @@ resource "aws_instance" "harbor_registry" {
   vpc_security_group_ids = [aws_security_group.harbor_registry.id]
   iam_instance_profile   = aws_iam_instance_profile.harbor_instance.name
 
+  # Require IMDSv2 for enhanced security (prevents SSRF attacks)
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"  # Enforces IMDSv2
+    http_put_response_hop_limit = 1
+  }
+
   # Encrypted root volume
   root_block_device {
     volume_type = "gp3"
