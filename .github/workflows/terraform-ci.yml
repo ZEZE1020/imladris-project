@@ -79,6 +79,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: validate
     
+    defaults:
+      run:
+        working-directory: imladris-platform
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -87,16 +91,27 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'config'
-          scan-ref: 'imladris-platform'
+          scan-ref: '.'
           format: 'sarif'
           output: 'trivy-results.sarif'
           exit-code: '0'
+          trivyignores: '.trivyignore'
+        env:
+          TRIVY_CONFIG_POLICY: ''
+
+      - name: Fix SARIF paths for GitHub
+        run: |
+          # Prepend imladris-platform/ to file paths so GitHub can link them
+          sed -i 's|"uri": "modules/|"uri": "imladris-platform/modules/|g' trivy-results.sarif
+          sed -i 's|"uri": "main.tf|"uri": "imladris-platform/main.tf|g' trivy-results.sarif
+          sed -i 's|"uri": "variables.tf|"uri": "imladris-platform/variables.tf|g' trivy-results.sarif
+        working-directory: ${{ github.workspace }}/imladris-platform
 
       - name: Upload Trivy SARIF file
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: trivy-results.sarif
+          sarif_file: imladris-platform/trivy-results.sarif
 
   # ============================================
   # Job 3: Checkov Compliance Scanning
