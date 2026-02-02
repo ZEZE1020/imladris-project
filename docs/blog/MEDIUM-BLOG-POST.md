@@ -18,7 +18,7 @@ The answer is yes, and in this post, I'll walk you through exactly how I built *
 - ⚡ **Automated security remediation** (self-healing infrastructure)
 - 📊 **Continuous compliance monitoring** with AWS Config
 
-> **Why "Imladris"?** Named after Rivendell from Lord of the Rings—a hidden sanctuary protected from outside threats. Perfect for a Zero Trust architecture!
+> **Why "Imladris"?** Named after Rivendell from The Lord of the Rings—a hidden sanctuary protected from outside threats. Perfect for a Zero Trust architecture!
 
 ---
 
@@ -536,9 +536,9 @@ terraform apply
 ## Connect With Me
 
 Have questions about Zero Trust architectures? Let's connect:
-- **LinkedIn**: [Your Profile]
-- **Twitter**: [@yourhandle]
-- **GitHub**: [yourusername]
+- **LinkedIn**: [[linkedIn.com/in/ogembo-godfrey](https://www.linkedin.com/in/ogembo-godfrey/)]
+- **Twitter**: [https://x.com/ogembo_godfrey]
+- **GitHub**: [github.com/ZEZE1020]
 
 ---
 
