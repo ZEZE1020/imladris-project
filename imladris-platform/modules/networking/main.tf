@@ -82,9 +82,11 @@ resource "aws_vpc_endpoint" "eks" {
 # Security Group for VPC Endpoints
 resource "aws_security_group" "vpc_endpoints" {
   name_prefix = "imladris-${var.environment}-vpc-endpoints-"
+  description = "Security group for VPC interface endpoints"  # Trivy: AVD-AWS-0099
   vpc_id      = aws_vpc.main.id
 
   ingress {
+    description = "HTTPS from VPC for AWS service APIs"  # Trivy: AVD-AWS-0107
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
@@ -144,3 +146,113 @@ resource "aws_vpclattice_service_network_vpc_association" "main" {
 # Data sources
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
+
+# VPC Flow Logs - Trivy: AVD-AWS-0178
+resource "aws_flow_log" "main" {
+  iam_role_arn    = aws_iam_role.flow_logs.arn
+  log_destination = aws_cloudwatch_log_group.flow_logs.arn
+  traffic_type    = "ALL"
+  vpc_id          = aws_vpc.main.id
+
+  tags = {
+    Name = "imladris-${var.environment}-vpc-flow-logs"
+  }
+}
+
+resource "aws_cloudwatch_log_group" "flow_logs" {
+  name              = "/aws/vpc/imladris-${var.environment}-flow-logs"
+  retention_in_days = 30
+  kms_key_id        = aws_kms_key.flow_logs.arn  # Trivy: AVD-AWS-0017
+
+  tags = {
+    Name = "imladris-${var.environment}-vpc-flow-logs"
+  }
+}
+
+resource "aws_kms_key" "flow_logs" {
+  description             = "KMS key for VPC flow logs encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true  # Trivy: AVD-AWS-0065
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow CloudWatch Logs"
+        Effect = "Allow"
+        Principal = {
+          Service = "logs.${data.aws_region.current.name}.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt*",
+          "kms:Decrypt*",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:Describe*"
+        ]
+        Resource = "*"
+        Condition = {
+          ArnLike = {
+            "kms:EncryptionContext:aws:logs:arn" = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name = "imladris-${var.environment}-flow-logs-key"
+  }
+}
+
+resource "aws_iam_role" "flow_logs" {
+  name = "imladris-${var.environment}-vpc-flow-logs-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "vpc-flow-logs.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name = "imladris-${var.environment}-vpc-flow-logs-role"
+  }
+}
+
+resource "aws_iam_role_policy" "flow_logs" {
+  name = "imladris-${var.environment}-vpc-flow-logs-policy"
+  role = aws_iam_role.flow_logs.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
