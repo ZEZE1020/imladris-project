@@ -14,6 +14,12 @@ resource "aws_eks_cluster" "main" {
     security_group_ids      = [aws_security_group.eks_cluster.id]
   }
 
+  # Enable API-based access management for EKS Access Entries
+  access_config {
+    authentication_mode                         = "API_AND_CONFIG_MAP"
+    bootstrap_cluster_creator_admin_permissions = true
+  }
+
   encryption_config {
     provider {
       key_arn = aws_kms_key.eks.arn
@@ -34,12 +40,14 @@ resource "aws_eks_cluster" "main" {
 resource "aws_cloudwatch_log_group" "eks_cluster" {
   name              = "/aws/eks/imladris-${var.environment}-cluster/cluster"
   retention_in_days = 30
+  kms_key_id        = aws_kms_key.eks.arn  # Trivy: AVD-AWS-0017
 }
 
 # KMS Key for EKS Encryption
 resource "aws_kms_key" "eks" {
   description             = "EKS Secret Encryption Key for imladris-${var.environment}"
   deletion_window_in_days = 7
+  enable_key_rotation     = true  # Trivy: AVD-AWS-0065
 
   tags = {
     Name = "imladris-${var.environment}-eks-key"
@@ -86,17 +94,20 @@ resource "aws_eks_fargate_profile" "main" {
 # Security Group for EKS Cluster
 resource "aws_security_group" "eks_cluster" {
   name_prefix = "imladris-${var.environment}-eks-cluster-"
+  description = "Security group for EKS cluster control plane"  # Trivy: AVD-AWS-0099
   vpc_id      = var.vpc_id
 
   # Allow all traffic within VPC - controlled by VPC Lattice
   ingress {
-    from_port   = 0
-    to_port     = 65535
+    description = "Allow HTTPS API access from VPC"
+    from_port   = 443
+    to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["10.0.0.0/16"]
   }
 
   egress {
+    description = "Allow outbound to VPC CIDR only - Zero Trust"  # Trivy: AVD-AWS-0104
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
