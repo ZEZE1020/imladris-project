@@ -55,6 +55,9 @@ module "compute" {
   vpc_lattice_service_network_id = module.networking.vpc_lattice_service_network_id
   eks_version                   = var.eks_version
   identity_center_instance_arn  = var.identity_center_instance_arn
+  vpc_cidr                      = var.vpc_cidr
+  aws_region                    = var.aws_region
+  eks_cluster_name              = "imladris-${var.environment}-cluster"
 
   depends_on = [
     module.networking,

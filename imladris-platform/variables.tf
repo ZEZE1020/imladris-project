@@ -25,7 +25,7 @@ variable "availability_zones" {
 variable "eks_version" {
   description = "EKS cluster version"
   type        = string
-  default     = "1.28"
+  default     = "1.30"
 }
 
 variable "identity_center_instance_arn" {

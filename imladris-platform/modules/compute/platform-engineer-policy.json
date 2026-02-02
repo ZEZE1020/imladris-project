@@ -21,7 +21,8 @@
         "identitystore:*",
         "lambda:*",
         "sns:*",
-        "sts:*"
+        "sts:*",
+        "codebuild:*"
       ],
       "Resource": "*"
     }
