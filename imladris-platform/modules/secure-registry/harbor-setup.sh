@@ -7,8 +7,10 @@ set -e
 # Variables
 ENVIRONMENT="${environment}"
 HARBOR_VERSION="v2.9.1"
+HARBOR_SHA256="d1a51165722d22022464704f029388f88602224b5269c947543878b7e2440266"
 HARBOR_DATA_DIR="/opt/harbor/data"
 COMPOSE_VERSION="2.21.0"
+COMPOSE_SHA256="59365637d2414e3d5572952e33357858f48429783431b78b9812023f45d55471"
 
 # Log all output to CloudWatch
 exec 1> >(logger -s -t harbor-setup)
@@ -39,12 +41,18 @@ chmod 755 $HARBOR_DATA_DIR
 echo "Installing Docker Compose v$COMPOSE_VERSION..."
 curl -L "https://github.com/docker/compose/releases/download/v$COMPOSE_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 chmod +x /usr/local/bin/docker-compose
+# Security: Verify checksum
+echo "$COMPOSE_SHA256  /usr/local/bin/docker-compose" | sha256sum -c -
 ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
 
 # Download and extract Harbor
 echo "Downloading Harbor $HARBOR_VERSION..."
 cd /opt
 wget -q "https://github.com/goharbor/harbor/releases/download/$HARBOR_VERSION/harbor-offline-installer-$HARBOR_VERSION.tgz"
+
+# Security: Verify checksum before extraction
+echo "$HARBOR_SHA256  harbor-offline-installer-$HARBOR_VERSION.tgz" | sha256sum -c -
+
 tar xzf harbor-offline-installer-$HARBOR_VERSION.tgz
 rm harbor-offline-installer-$HARBOR_VERSION.tgz
 
@@ -111,6 +119,10 @@ _version: $HARBOR_VERSION
 
 # Proxy cache configuration will be done via API after installation
 EOF
+
+# Security: Restrict permissions on harbor.yml (contains plaintext credentials)
+chmod 600 /opt/harbor/harbor.yml
+echo "Harbor configuration secured with chmod 600"
 
 # Install Harbor
 echo "Installing Harbor..."
