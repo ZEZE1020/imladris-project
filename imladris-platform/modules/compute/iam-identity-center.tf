@@ -215,7 +215,9 @@ resource "aws_ssoadmin_permission_set_inline_policy" "senior_devops_policy" {
           "vpc-lattice:*",
           
           # IAM for service roles
-          "iam:*",
+          "iam:Get*",
+          "iam:List*",
+          "iam:CreateServiceLinkedRole",
           
           # Config and Compliance
           "config:*",
@@ -233,9 +235,27 @@ resource "aws_ssoadmin_permission_set_inline_policy" "senior_devops_policy" {
           "kms:*",
           
           # S3 for Terraform state
-          "s3:*"
+          "s3:ListAllMyBuckets",
+          "s3:GetBucketLocation",
+          "s3:ListBucket",
+          "s3:GetObject",
+          "s3:PutObject"
         ]
         Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = "iam:PassRole"
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "iam:PassedToService" = [
+              "ec2.amazonaws.com",
+              "eks.amazonaws.com",
+              "eks-fargate-pods.amazonaws.com"
+            ]
+          }
+        }
       }
     ]
   })
