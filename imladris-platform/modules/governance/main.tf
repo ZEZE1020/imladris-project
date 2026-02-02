@@ -24,7 +24,7 @@ resource "aws_config_configuration_recorder" "recorder" {
 # S3 Bucket for Config
 resource "aws_s3_bucket" "config" {
   bucket        = "imladris-${var.environment}-config-${random_string.suffix.result}"
-  force_destroy = true
+  force_destroy = false
 }
 
 resource "aws_s3_bucket_public_access_block" "config" {
@@ -41,9 +41,65 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "config" {
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm     = "aws:kms"  # Trivy: AVD-AWS-0132 - Use KMS instead of AES256
+      kms_master_key_id = aws_kms_key.config_bucket.arn
     }
+    bucket_key_enabled = true
   }
+}
+
+# KMS Key for Config S3 Bucket - Trivy: AVD-AWS-0065
+resource "aws_kms_key" "config_bucket" {
+  description             = "KMS key for Config S3 bucket encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow Config Service"
+        Effect = "Allow"
+        Principal = {
+          Service = "config.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = {
+    Name = "imladris-${var.environment}-config-bucket-key"
+  }
+}
+
+# S3 Bucket Versioning - Trivy: AVD-AWS-0090
+resource "aws_s3_bucket_versioning" "config" {
+  bucket = aws_s3_bucket.config.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# S3 Bucket Logging - Trivy: AVD-AWS-0089
+resource "aws_s3_bucket_logging" "config" {
+  bucket = aws_s3_bucket.config.id
+
+  target_bucket = aws_s3_bucket.config.id
+  target_prefix = "access-logs/"
 }
 
 resource "aws_s3_bucket_policy" "config_bucket_policy" {
