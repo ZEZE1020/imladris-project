@@ -16,6 +16,7 @@ namespace:
   - terraform.security
   - terraform.networking
   - terraform.compute
+  - terraform.ingress
 
 # Failure threshold
 fail-on-warn: false
