@@ -89,7 +89,7 @@ data:
         Rule                      $event_type ^NETWORK$ tetragon.network-events false
         Emitter_Name              re_emitted
 
-    # Regional context enrichment for Kisumu VPC
+    # Regional context enrichment for monitored VPC
     [FILTER]
         Name                      lua
         Match                     tetragon.*
@@ -178,23 +178,23 @@ data:
   regional-enrichment.lua: |
     -- Lua script for regional context enrichment
     function enrich_regional_context(tag, timestamp, record)
-        -- Kisumu regional VPC CIDR blocks
-        local kisumu_cidrs = {
+        -- Monitored regional VPC CIDR blocks
+        local monitored_cidrs = {
             "10.100.0.0/16",
             "172.31.100.0/24"
         }
 
-        -- Check if source IP is from Kisumu region
+        -- Check if source IP is from monitored region
         local src_ip = record["network"] and record["network"]["src_ip"]
         if src_ip then
-            for _, cidr in ipairs(kisumu_cidrs) do
+            for _, cidr in ipairs(monitored_cidrs) do
                 if is_ip_in_cidr(src_ip, cidr) then
                     record["regional_context"] = {
-                        ["region"] = "lake-victoria-kisumu",
+                        ["region"] = "monitored-region",
                         ["enhanced_enforcement"] = true,
                         ["vpc_cidr"] = cidr
                     }
-                    record["severity"] = "critical"  -- Escalate severity for Kisumu region
+                    record["severity"] = "critical"  -- Escalate severity for monitored region
                     break
                 end
             end
@@ -202,9 +202,9 @@ data:
 
         -- Check node metadata for regional context
         local node_name = record["node_name"]
-        if node_name and string.find(node_name, "kisumu") then
+        if node_name and string.find(node_name, "monitored") then
             record["regional_context"] = record["regional_context"] or {}
-            record["regional_context"]["node_region"] = "kisumu"
+            record["regional_context"]["node_region"] = "monitored"
         end
 
         return 2, timestamp, record

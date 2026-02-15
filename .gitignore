@@ -88,7 +88,7 @@ temp/
 # Response files from tests
 response.json
 test-response.json
-kisumu-test.json
+monitored-test.json
 
 # Backup files
 *.backup
@@ -121,3 +121,8 @@ DEPLOYMENT-GUIDE.md
 # Root level terraform artifacts (use imladris-platform/ instead)
 /.terraform/
 /.terraform.lock.hcl
+
+# RBAC test logs
+rbac-test-*.log
+
+presentation/

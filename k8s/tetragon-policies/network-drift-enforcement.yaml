@@ -349,7 +349,7 @@ spec:
       - action: Post
 
 ---
-# Regional VPC Enforcement (Lake Victoria/Kisumu)
+# Regional VPC Enforcement (Monitored Region)
 apiVersion: cilium.io/v1alpha1
 kind: TracingPolicy
 metadata:
@@ -359,7 +359,7 @@ metadata:
     app: tetragon
     policy-type: regional-security
     severity: critical
-    region: lake-victoria-kisumu
+    region: monitored-region
 spec:
   # Stricter enforcement for specific regional VPC ranges
   kprobes:
@@ -369,12 +369,12 @@ spec:
     - index: 0
       type: "sock"
     selectors:
-    # Enhanced monitoring for Lake Victoria/Kisumu region
+    # Enhanced monitoring for monitored region
     - matchArgs:
       - index: 0
         operator: "SAddr"
         values:
-        # Kisumu regional VPC CIDR blocks
+        # Monitored regional VPC CIDR blocks
         - "10.100.0.0/16"
         - "172.31.100.0/24"
       - index: 0
