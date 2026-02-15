@@ -164,15 +164,15 @@ class NodeInfo:
     subnet_id: str = ""
     private_ip: str = ""
 
-    def is_kisumu_region(self, kisumu_cidrs: List[str]) -> bool:
-        """Check if node is in Lake Victoria/Kisumu regional VPC"""
+    def is_monitored_region(self, monitored_cidrs: List[str]) -> bool:
+        """Check if node is in a monitored regional VPC"""
         if not self.private_ip:
             return False
 
         import ipaddress
         node_ip = ipaddress.ip_address(self.private_ip)
 
-        for cidr in kisumu_cidrs:
+        for cidr in monitored_cidrs:
             if node_ip in ipaddress.ip_network(cidr):
                 return True
         return False
@@ -503,7 +503,7 @@ EXAMPLE_FILE_ACCESS_EVENT = '''
 EXAMPLE_NETWORK_EVENT = '''
 {
   "process_exec_id": "Y2lsaXVtLW5ldHdvcms=",
-  "node_name": "eks-security-node-kisumu-001",
+  "node_name": "eks-security-node-monitored-001",
   "time": "2024-01-15T10:40:30.555666777Z",
   "event_type": "NETWORK",
   "process": {
@@ -524,8 +524,8 @@ EXAMPLE_NETWORK_EVENT = '''
     "direction": "egress"
   },
   "node_info": {
-    "vpc_id": "vpc-kisumu123",
-    "subnet_id": "subnet-lakevictoria456",
+    "vpc_id": "vpc-monitored123",
+    "subnet_id": "subnet-private456",
     "private_ip": "10.100.1.50",
     "region": "af-south-1",
     "availability_zone": "af-south-1a"

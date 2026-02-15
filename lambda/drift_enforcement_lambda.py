@@ -27,7 +27,7 @@ secretsmanager = boto3.client('secretsmanager')
 
 # Environment variables
 CLUSTER_NAME = os.environ.get('CLUSTER_NAME', 'security-drift-engine')
-KISUMU_VPC_CIDRS = os.environ.get('KISUMU_VPC_CIDRS', '10.100.0.0/16,172.31.100.0/24').split(',')
+MONITORED_VPC_CIDRS = os.environ.get('MONITORED_VPC_CIDRS', '10.100.0.0/16,172.31.100.0/24').split(',')
 SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN')
 QUARANTINE_NAMESPACE = os.environ.get('QUARANTINE_NAMESPACE', 'security-quarantine')
 EKS_ENDPOINT = os.environ.get('EKS_ENDPOINT')
@@ -114,7 +114,7 @@ class PodQuarantineManager:
         token = base64.b64encode(url.encode()).decode().rstrip('=')
         return f"k8s-aws-v1.{token}"
 
-    def quarantine_pod(self, event: TetragonEvent, is_kisumu_region: bool = False) -> bool:
+    def quarantine_pod(self, event: TetragonEvent, is_monitored_region: bool = False) -> bool:
         """Quarantine a compromised pod by applying network policies"""
         try:
             if not event.kubernetes:
@@ -128,7 +128,7 @@ class PodQuarantineManager:
 
             # Create quarantine NetworkPolicy
             quarantine_policy = self._create_quarantine_network_policy(
-                namespace, pod_name, is_kisumu_region
+                namespace, pod_name, is_monitored_region
             )
 
             # Apply the NetworkPolicy
@@ -148,7 +148,7 @@ class PodQuarantineManager:
             self._label_pod_for_quarantine(namespace, pod_name, event)
 
             # Create incident record
-            self._create_incident_record(event, is_kisumu_region)
+            self._create_incident_record(event, is_monitored_region)
 
             return True
 
@@ -157,7 +157,7 @@ class PodQuarantineManager:
             return False
 
     def _create_quarantine_network_policy(self, namespace: str, pod_name: str,
-                                        is_kisumu_region: bool) -> Dict[str, Any]:
+                                        is_monitored_region: bool) -> Dict[str, Any]:
         """Create NetworkPolicy for pod quarantine"""
 
         # Base quarantine policy - deny all traffic
@@ -174,7 +174,7 @@ class PodQuarantineManager:
                 },
                 "annotations": {
                     "security.tetragon.io/reason": "Runtime drift detected by Tetragon",
-                    "security.tetragon.io/regional-enforcement": str(is_kisumu_region)
+                    "security.tetragon.io/regional-enforcement": str(is_monitored_region)
                 }
             },
             "spec": {
@@ -187,11 +187,11 @@ class PodQuarantineManager:
             }
         }
 
-        if is_kisumu_region:
-            # Stricter policy for Kisumu region - no traffic allowed at all
+        if is_monitored_region:
+            # Stricter policy for monitored region - no traffic allowed at all
             base_policy["spec"]["ingress"] = []
             base_policy["spec"]["egress"] = []
-            base_policy["metadata"]["labels"]["security.tetragon.io/region"] = "kisumu"
+            base_policy["metadata"]["labels"]["security.tetragon.io/region"] = "monitored"
         else:
             # Standard quarantine - allow only DNS and metadata service
             base_policy["spec"]["egress"] = [
@@ -237,7 +237,7 @@ class PodQuarantineManager:
         except Exception as e:
             logger.error(f"Failed to label pod {pod_name}: {e}")
 
-    def _create_incident_record(self, event: TetragonEvent, is_kisumu_region: bool):
+    def _create_incident_record(self, event: TetragonEvent, is_monitored_region: bool):
         """Create incident record in CloudWatch"""
         incident_data = {
             "incident_id": f"drift-{event.process_exec_id}",
@@ -246,7 +246,7 @@ class PodQuarantineManager:
             "severity": event.severity,
             "node_name": event.node_name,
             "action_taken": "pod_quarantine",
-            "regional_enforcement": is_kisumu_region,
+            "regional_enforcement": is_monitored_region,
             "policy_name": event.policy_name,
             "kubernetes": {
                 "namespace": event.kubernetes.namespace if event.kubernetes else None,
@@ -308,27 +308,27 @@ class EventProcessor:
                 result["high_severity"] = True
 
                 # Check regional context
-                is_kisumu = False
+                is_monitored = False
                 if event.node_info:
-                    is_kisumu = event.node_info.is_kisumu_region(KISUMU_VPC_CIDRS)
-                    result["kisumu_region"] = is_kisumu
+                    is_monitored = event.node_info.is_monitored_region(MONITORED_VPC_CIDRS)
+                    result["monitored_region"] = is_monitored
 
                 # Process based on event type
                 if event.is_process_exec_event():
-                    actions = self._handle_process_exec_event(event, is_kisumu)
+                    actions = self._handle_process_exec_event(event, is_monitored)
                     result["actions_taken"].extend(actions)
 
                 elif event.is_file_access_event():
-                    actions = self._handle_file_access_event(event, is_kisumu)
+                    actions = self._handle_file_access_event(event, is_monitored)
                     result["actions_taken"].extend(actions)
 
                 elif event.is_network_event():
-                    actions = self._handle_network_event(event, is_kisumu)
+                    actions = self._handle_network_event(event, is_monitored)
                     result["actions_taken"].extend(actions)
 
                 # Send alert for high-severity events
                 if SNS_TOPIC_ARN:
-                    self._send_alert(event, is_kisumu)
+                    self._send_alert(event, is_monitored)
                     result["actions_taken"].append("alert_sent")
 
             else:
@@ -345,7 +345,7 @@ class EventProcessor:
             result["processed"] = False
             return result
 
-    def _handle_process_exec_event(self, event: TetragonEvent, is_kisumu: bool) -> List[str]:
+    def _handle_process_exec_event(self, event: TetragonEvent, is_monitored: bool) -> List[str]:
         """Handle process execution drift events"""
         actions = []
 
@@ -360,7 +360,7 @@ class EventProcessor:
             logger.warning(f"Blacklisted process detected: {process_name}")
 
             # Quarantine the pod
-            if event.kubernetes and self.quarantine_manager.quarantine_pod(event, is_kisumu):
+            if event.kubernetes and self.quarantine_manager.quarantine_pod(event, is_monitored):
                 actions.append("pod_quarantined")
                 logger.info(f"Pod quarantined for process: {process_name}")
 
@@ -370,12 +370,12 @@ class EventProcessor:
             actions.append("suspicious_args_detected")
 
             if event.kubernetes:
-                self.quarantine_manager.quarantine_pod(event, is_kisumu)
+                self.quarantine_manager.quarantine_pod(event, is_monitored)
                 actions.append("pod_quarantined")
 
         return actions
 
-    def _handle_file_access_event(self, event: TetragonEvent, is_kisumu: bool) -> List[str]:
+    def _handle_file_access_event(self, event: TetragonEvent, is_monitored: bool) -> List[str]:
         """Handle file integrity monitoring events"""
         actions = []
 
@@ -394,12 +394,12 @@ class EventProcessor:
             actions.append("critical_file_access")
 
             # Immediate quarantine for critical file modifications
-            if event.kubernetes and self.quarantine_manager.quarantine_pod(event, is_kisumu):
+            if event.kubernetes and self.quarantine_manager.quarantine_pod(event, is_monitored):
                 actions.append("pod_quarantined")
 
         return actions
 
-    def _handle_network_event(self, event: TetragonEvent, is_kisumu: bool) -> List[str]:
+    def _handle_network_event(self, event: TetragonEvent, is_monitored: bool) -> List[str]:
         """Handle network drift events"""
         actions = []
 
@@ -413,19 +413,19 @@ class EventProcessor:
             logger.warning(f"Suspicious network connection to port {event.network.dst_port}")
             actions.append("suspicious_network_connection")
 
-            if event.kubernetes and self.quarantine_manager.quarantine_pod(event, is_kisumu):
+            if event.kubernetes and self.quarantine_manager.quarantine_pod(event, is_monitored):
                 actions.append("pod_quarantined")
 
-        # Enhanced enforcement for Kisumu region
-        if is_kisumu:
-            # Block all external traffic for Kisumu region
+        # Enhanced enforcement for monitored region
+        if is_monitored:
+            # Block all external traffic for monitored region
             dst_ip = ipaddress.ip_address(event.network.dst_ip)
             if not dst_ip.is_private and str(dst_ip) != "169.254.169.254":
-                logger.warning(f"External connection from Kisumu region blocked: {event.network.dst_ip}")
+                logger.warning(f"External connection from monitored region blocked: {event.network.dst_ip}")
                 actions.append("regional_enforcement_triggered")
 
                 if event.kubernetes:
-                    self.quarantine_manager.quarantine_pod(event, is_kisumu)
+                    self.quarantine_manager.quarantine_pod(event, is_monitored)
                     actions.append("pod_quarantined")
 
         return actions
@@ -441,7 +441,7 @@ class EventProcessor:
         args_lower = arguments.lower()
         return any(pattern in args_lower for pattern in suspicious_patterns)
 
-    def _send_alert(self, event: TetragonEvent, is_kisumu: bool):
+    def _send_alert(self, event: TetragonEvent, is_monitored: bool):
         """Send SNS alert for high-severity events"""
         try:
             alert_message = {
@@ -450,7 +450,7 @@ class EventProcessor:
                 "severity": "HIGH",
                 "event_type": event.event_type.name,
                 "node_name": event.node_name,
-                "kisumu_region": is_kisumu,
+                "monitored_region": is_monitored,
                 "policy": event.policy_name,
                 "process": {
                     "binary": event.process.binary,

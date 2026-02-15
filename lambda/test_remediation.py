@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 logger = logging.getLogger(__name__)
 lambda_client = boto3.client('lambda')
 
-def create_test_event(event_type: str, kisumu_region: bool = False) -> dict:
+def create_test_event(event_type: str, monitored_region: bool = False) -> dict:
     """Create a test event for various scenarios"""
 
     base_timestamp = datetime.now(timezone.utc).isoformat()
@@ -18,7 +18,7 @@ def create_test_event(event_type: str, kisumu_region: bool = False) -> dict:
     if event_type == "malicious_process_exec":
         return {
             "process_exec_id": f"test-{event_type}-{int(datetime.now().timestamp())}",
-            "node_name": "eks-security-node-kisumu-001" if kisumu_region else "eks-security-node-12345",
+            "node_name": "eks-security-node-monitored-001" if monitored_region else "eks-security-node-12345",
             "time": base_timestamp,
             "event_type": "PROCESS_EXEC",
             "process": {
@@ -52,9 +52,9 @@ def create_test_event(event_type: str, kisumu_region: bool = False) -> dict:
                 "workload_name": "webapp-deployment"
             },
             "node_info": {
-                "vpc_id": "vpc-kisumu123" if kisumu_region else "vpc-standard123",
-                "subnet_id": "subnet-lakevictoria456" if kisumu_region else "subnet-standard456",
-                "private_ip": "10.100.1.50" if kisumu_region else "10.0.1.50",
+                "vpc_id": "vpc-monitored123" if monitored_region else "vpc-standard123",
+                "subnet_id": "subnet-private456" if monitored_region else "subnet-standard456",
+                "private_ip": "10.100.1.50" if monitored_region else "10.0.1.50",
                 "region": "af-south-1",
                 "availability_zone": "af-south-1a"
             },
@@ -66,7 +66,7 @@ def create_test_event(event_type: str, kisumu_region: bool = False) -> dict:
     elif event_type == "unauthorized_file_access":
         return {
             "process_exec_id": f"test-{event_type}-{int(datetime.now().timestamp())}",
-            "node_name": "eks-security-node-kisumu-002" if kisumu_region else "eks-security-node-67890",
+            "node_name": "eks-security-node-monitored-002" if monitored_region else "eks-security-node-67890",
             "time": base_timestamp,
             "event_type": "FILE",
             "process": {
@@ -92,9 +92,9 @@ def create_test_event(event_type: str, kisumu_region: bool = False) -> dict:
                 "container_name": "attacker"
             },
             "node_info": {
-                "vpc_id": "vpc-kisumu123" if kisumu_region else "vpc-standard123",
-                "subnet_id": "subnet-lakevictoria456" if kisumu_region else "subnet-standard456",
-                "private_ip": "10.100.2.30" if kisumu_region else "10.0.2.30",
+                "vpc_id": "vpc-monitored123" if monitored_region else "vpc-standard123",
+                "subnet_id": "subnet-private456" if monitored_region else "subnet-standard456",
+                "private_ip": "10.100.2.30" if monitored_region else "10.0.2.30",
                 "region": "af-south-1",
                 "availability_zone": "af-south-1b"
             },
@@ -106,7 +106,7 @@ def create_test_event(event_type: str, kisumu_region: bool = False) -> dict:
     elif event_type == "suspicious_network_connection":
         return {
             "process_exec_id": f"test-{event_type}-{int(datetime.now().timestamp())}",
-            "node_name": "eks-security-node-kisumu-003" if kisumu_region else "eks-security-node-99999",
+            "node_name": "eks-security-node-monitored-003" if monitored_region else "eks-security-node-99999",
             "time": base_timestamp,
             "event_type": "NETWORK",
             "process": {
@@ -119,7 +119,7 @@ def create_test_event(event_type: str, kisumu_region: bool = False) -> dict:
             "network": {
                 "protocol": "TCP",
                 "family": "AF_INET",
-                "src_ip": "10.100.3.40" if kisumu_region else "10.0.3.40",
+                "src_ip": "10.100.3.40" if monitored_region else "10.0.3.40",
                 "src_port": 45678,
                 "dst_ip": "192.168.1.100",
                 "dst_port": 31337,
@@ -132,13 +132,13 @@ def create_test_event(event_type: str, kisumu_region: bool = False) -> dict:
                 "container_name": "reverse-shell"
             },
             "node_info": {
-                "vpc_id": "vpc-kisumu123" if kisumu_region else "vpc-standard123",
-                "subnet_id": "subnet-lakevictoria456" if kisumu_region else "subnet-standard456",
-                "private_ip": "10.100.3.40" if kisumu_region else "10.0.3.40",
+                "vpc_id": "vpc-monitored123" if monitored_region else "vpc-standard123",
+                "subnet_id": "subnet-private456" if monitored_region else "subnet-standard456",
+                "private_ip": "10.100.3.40" if monitored_region else "10.0.3.40",
                 "region": "af-south-1",
                 "availability_zone": "af-south-1c"
             },
-            "policy_name": "regional-vpc-enforcement" if kisumu_region else "network-drift-enforcement",
+            "policy_name": "regional-vpc-enforcement" if monitored_region else "network-drift-enforcement",
             "severity": "critical",
             "action": "deny"
         }
@@ -146,7 +146,7 @@ def create_test_event(event_type: str, kisumu_region: bool = False) -> dict:
     elif event_type == "container_escape_attempt":
         return {
             "process_exec_id": f"test-{event_type}-{int(datetime.now().timestamp())}",
-            "node_name": "eks-security-node-kisumu-004" if kisumu_region else "eks-security-node-11111",
+            "node_name": "eks-security-node-monitored-004" if monitored_region else "eks-security-node-11111",
             "time": base_timestamp,
             "event_type": "PROCESS_KPROBE",
             "process": {
@@ -171,9 +171,9 @@ def create_test_event(event_type: str, kisumu_region: bool = False) -> dict:
                 "container_name": "escape-attempt"
             },
             "node_info": {
-                "vpc_id": "vpc-kisumu123" if kisumu_region else "vpc-standard123",
-                "subnet_id": "subnet-lakevictoria456" if kisumu_region else "subnet-standard456",
-                "private_ip": "10.100.4.50" if kisumu_region else "10.0.4.50",
+                "vpc_id": "vpc-monitored123" if monitored_region else "vpc-standard123",
+                "subnet_id": "subnet-private456" if monitored_region else "subnet-standard456",
+                "private_ip": "10.100.4.50" if monitored_region else "10.0.4.50",
                 "region": "af-south-1",
                 "availability_zone": "af-south-1a"
             },
@@ -190,7 +190,7 @@ def lambda_handler(event, context):
 
     # Extract test parameters
     test_type = event.get('test_type', 'all')
-    kisumu_region = event.get('kisumu_region', False)
+    monitored_region = event.get('monitored_region', False)
     main_lambda_name = event.get('main_lambda_name', 'security-drift-engine-drift-enforcement')
 
     results = []
@@ -205,12 +205,12 @@ def lambda_handler(event, context):
     if test_type != 'all':
         test_scenarios = [test_type]
 
-    logger.info(f"Running tests: {test_scenarios}, Kisumu region: {kisumu_region}")
+    logger.info(f"Running tests: {test_scenarios}, Monitored region: {monitored_region}")
 
     for scenario in test_scenarios:
         try:
             # Create test event
-            test_event = create_test_event(scenario, kisumu_region)
+            test_event = create_test_event(scenario, monitored_region)
 
             # Create Lambda event payload (simulating CloudWatch Logs)
             lambda_payload = {
@@ -235,7 +235,7 @@ def lambda_handler(event, context):
 
             result = {
                 "scenario": scenario,
-                "kisumu_region": kisumu_region,
+                "monitored_region": monitored_region,
                 "status": "success" if response['StatusCode'] == 200 else "failed",
                 "response": response_payload,
                 "test_timestamp": datetime.now(timezone.utc).isoformat()
@@ -246,7 +246,7 @@ def lambda_handler(event, context):
         except Exception as e:
             result = {
                 "scenario": scenario,
-                "kisumu_region": kisumu_region,
+                "monitored_region": monitored_region,
                 "status": "error",
                 "error": str(e),
                 "test_timestamp": datetime.now(timezone.utc).isoformat()
@@ -271,7 +271,7 @@ def lambda_handler(event, context):
             'test_results': results,
             'test_configuration': {
                 'test_type': test_type,
-                'kisumu_region': kisumu_region,
+                'monitored_region': monitored_region,
                 'timestamp': datetime.now(timezone.utc).isoformat()
             }
         }, indent=2)
