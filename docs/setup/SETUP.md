@@ -311,7 +311,7 @@ Use the service template to deploy an application:
 
 ```bash
 # Clone the service template
-git clone https://github.com/your-org/imladris-service-template.git my-banking-service
+git clone https://github.com/ZEZE1020/imladris-service-template.git my-banking-service
 cd my-banking-service
 
 # Customize service name

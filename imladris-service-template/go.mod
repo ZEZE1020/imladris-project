@@ -1,4 +1,4 @@
-module github.com/your-org/imladris-service-template
+module github.com/ZEZE1020/imladris-service-template
 
 go 1.21
 

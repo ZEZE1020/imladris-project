@@ -14,7 +14,7 @@ spec:
 
   # Source configuration
   source:
-    repoURL: https://github.com/your-org/imladris-gitops.git
+    repoURL: https://github.com/ZEZE1020/imladris-gitops.git
     targetRevision: HEAD
     path: tenants
     directory:
@@ -71,8 +71,8 @@ spec:
 
   # Source repositories
   sourceRepos:
-  - https://github.com/your-org/imladris-gitops.git
-  - https://github.com/your-org/imladris-service-template.git
+  - https://github.com/ZEZE1020/imladris-gitops.git
+  - https://github.com/ZEZE1020/imladris-service-template.git
 
   # Allowed destinations
   destinations:

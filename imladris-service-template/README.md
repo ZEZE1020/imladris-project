@@ -28,11 +28,11 @@ Provides a "golden path" for developing zero-trust banking services with:
 
 ```bash
 # Clone the template
-git clone https://github.com/your-org/imladris-service-template.git my-service
+git clone https://github.com/ZEZE1020/imladris-service-template.git my-service
 cd my-service
 
 # Update Go module name
-go mod edit -module github.com/your-org/my-service
+go mod edit -module github.com/ZEZE1020/my-service
 
 # Update service configuration
 export SERVICE_NAME="my-service"

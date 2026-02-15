@@ -60,11 +60,11 @@ data:
   # Repository configuration
   repositories: |
     - type: git
-      url: https://github.com/your-org/imladris-gitops.git
+      url: https://github.com/ZEZE1020/imladris-gitops.git
       name: imladris-gitops
       project: imladris-platform
     - type: git
-      url: https://github.com/your-org/imladris-service-template.git
+      url: https://github.com/ZEZE1020/imladris-service-template.git
       name: imladris-service-template
       project: imladris-platform
 

@@ -19,7 +19,7 @@ All deployments are initiated through Git commits to the GitOps repository.
 
 ```bash
 # Clone the service template
-git clone https://github.com/your-org/imladris-service-template.git my-service
+git clone https://github.com/ZEZE1020/imladris-service-template.git my-service
 cd my-service
 
 # Configure for your service

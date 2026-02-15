@@ -13,7 +13,7 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
   ECR_REPOSITORY: banking-core-service
-  GITOPS_REPO: your-org/imladris-gitops
+  GITOPS_REPO: ZEZE1020/imladris-gitops
   SERVICE_NAME: banking-core-service
 
 jobs:
@@ -52,7 +52,7 @@ jobs:
           sudo mv conftest /usr/local/bin
 
           # Clone governance repo for policies
-          git clone https://github.com/your-org/imladris-governance.git
+          git clone https://github.com/ZEZE1020/imladris-governance.git
 
           # Validate Kubernetes manifests
           conftest verify --policy imladris-governance/policies k8s/*.yaml
