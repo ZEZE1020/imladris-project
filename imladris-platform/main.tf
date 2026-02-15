@@ -64,3 +64,28 @@ module "compute" {
     module.governance
   ]
 }
+
+# Ingress Module - PrivateLink-Based External Access (OPTIONAL)
+# Enables partner/client connectivity WITHOUT an Internet Gateway.
+# Uncomment when you have an ACM certificate and want to expose services.
+#
+# module "ingress" {
+#   source = "./modules/ingress"
+#
+#   environment        = var.environment
+#   vpc_id             = module.networking.vpc_id
+#   vpc_cidr           = var.vpc_cidr
+#   private_subnet_ids = module.networking.private_subnet_ids
+#   certificate_arn    = var.ingress_certificate_arn
+#
+#   # Zero Trust: require manual approval for PrivateLink connections
+#   require_manual_acceptance = true
+#
+#   # Restrict to specific partner AWS accounts
+#   allowed_principal_arns = var.ingress_allowed_principals
+#
+#   depends_on = [
+#     module.networking,
+#     module.compute
+#   ]
+# }

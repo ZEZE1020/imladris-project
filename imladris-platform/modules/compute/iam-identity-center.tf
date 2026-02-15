@@ -537,3 +537,5 @@ output "sso_start_url" {
   description = "AWS SSO start URL"
   value       = "https://${split("/", local.identity_center_instance_arn)[1]}.awsapps.com/start"
 }
+data "aws_region" "current" {}
+
