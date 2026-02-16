@@ -2,7 +2,10 @@
 # ============================================================================
 # IMLADRIS WEBINAR - DEMO RESET SCRIPT
 # Resets the demo environment to clean state in <10 seconds
-# Usage: ./reset_demo.sh [--full]
+# Usage: ./reset_demo.sh [--full] [--yes]
+#
+# ⚠️  WARNING: This script clears terminal history and screen content.
+# ⚠️  Only run this in demo/development environments, not during actual work.
 # ============================================================================
 
 set -e
@@ -23,8 +26,24 @@ warn() { echo -e "${YELLOW}⚠️  $1${NC}"; }
 
 # Parse arguments
 FULL_RESET=false
-if [[ "$1" == "--full" ]]; then
+SKIP_CONFIRM=false
+if [[ "$1" == "--full" ]] || [[ "$2" == "--full" ]]; then
     FULL_RESET=true
+fi
+if [[ "$1" == "--yes" ]] || [[ "$2" == "--yes" ]]; then
+    SKIP_CONFIRM=true
+fi
+
+# Confirmation prompt for destructive operations
+if [[ "$SKIP_CONFIRM" != "true" ]]; then
+    echo ""
+    warn "This script will clear terminal history and screen content."
+    echo -n "Are you sure you want to continue? [y/N] "
+    read -r response
+    if [[ ! "$response" =~ ^[Yy]$ ]]; then
+        echo "Aborted."
+        exit 0
+    fi
 fi
 
 echo ""

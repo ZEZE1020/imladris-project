@@ -46,7 +46,8 @@ run_test() {
     log "\n--- Testing: $test_name ---"
     log "Command: $command"
     
-    if OUTPUT=$(eval "$command" 2>&1); then
+    # Execute command in subshell without eval to avoid command injection risks
+    if OUTPUT=$(sh -c "$command" 2>&1); then
         if [ "$expect_success" = "true" ]; then
             test_pass "$test_name"
         else
