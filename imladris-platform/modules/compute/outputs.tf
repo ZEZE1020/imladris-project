@@ -57,3 +57,13 @@ output "identity_center_permission_set_arn" {
   description = "IAM Identity Center Permission Set ARN (empty if Identity Center not configured)"
   value       = length(aws_ssoadmin_permission_set.platform_engineers) > 0 ? aws_ssoadmin_permission_set.platform_engineers[0].arn : ""
 }
+
+output "oidc_provider_arn" {
+  description = "EKS OIDC provider ARN for IRSA trust relationships"
+  value       = aws_iam_openid_connect_provider.eks.arn
+}
+
+output "oidc_provider_url" {
+  description = "EKS OIDC provider URL without https:// prefix"
+  value       = replace(aws_eks_cluster.main.identity[0].oidc[0].issuer, "https://", "")
+}

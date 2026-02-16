@@ -33,3 +33,35 @@ variable "identity_center_instance_arn" {
   type        = string
   default     = ""
 }
+
+# ===== Aurora Serverless v2 =====
+
+variable "aurora_engine_version" {
+  description = "Aurora PostgreSQL engine version"
+  type        = string
+  default     = "15.4"
+}
+
+variable "aurora_database_name" {
+  description = "Default database name for the Aurora cluster"
+  type        = string
+  default     = "imladris"
+}
+
+variable "aurora_min_capacity" {
+  description = "Minimum ACU for Aurora Serverless v2 (0.5 is smallest)"
+  type        = number
+  default     = 0.5
+}
+
+variable "aurora_max_capacity" {
+  description = "Maximum ACU for Aurora Serverless v2"
+  type        = number
+  default     = 4
+}
+
+variable "aurora_reader_count" {
+  description = "Number of Aurora read replicas (0 for dev, 1+ for prod)"
+  type        = number
+  default     = 0
+}
