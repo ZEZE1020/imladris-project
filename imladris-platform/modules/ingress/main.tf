@@ -305,3 +305,4 @@ resource "random_string" "suffix" {
   special = false
   upper   = false
 }
+Add `filter {}` block to this lifecycle rule - AWS provider now requires either `filter` or `prefix` attribute.
