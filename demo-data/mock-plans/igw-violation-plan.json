@@ -1,0 +1,69 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.6.0",
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_internet_gateway.public_access",
+          "type": "aws_internet_gateway",
+          "name": "public_access",
+          "values": {
+            "vpc_id": "vpc-imladris-dev",
+            "tags": {
+              "Name": "imladris-dev-igw",
+              "Reason": "Developer requested public access for debugging"
+            }
+          }
+        },
+        {
+          "address": "aws_lb.public_alb",
+          "type": "aws_lb",
+          "name": "public_alb",
+          "values": {
+            "name": "public-banking-api",
+            "internal": false,
+            "load_balancer_type": "application",
+            "subnets": ["subnet-public-1a", "subnet-public-1b"],
+            "tags": {
+              "Name": "public-banking-api"
+            }
+          }
+        },
+        {
+          "address": "aws_subnet.public",
+          "type": "aws_subnet",
+          "name": "public",
+          "values": {
+            "cidr_block": "10.0.100.0/24",
+            "availability_zone": "us-east-1a",
+            "map_public_ip_on_launch": true,
+            "tags": {
+              "Name": "imladris-dev-public-1a",
+              "Type": "public"
+            }
+          }
+        },
+        {
+          "address": "module.networking.aws_vpc.main",
+          "type": "aws_vpc",
+          "name": "main",
+          "values": {
+            "cidr_block": "10.0.0.0/16"
+          }
+        }
+      ]
+    }
+  },
+  "configuration": {
+    "provider_config": {
+      "aws": {
+        "expressions": {
+          "region": {
+            "constant_value": "us-east-1"
+          }
+        }
+      }
+    }
+  }
+}

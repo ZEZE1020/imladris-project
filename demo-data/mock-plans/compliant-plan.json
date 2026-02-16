@@ -1,0 +1,87 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.6.0",
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "module.networking.aws_vpc.main",
+          "type": "aws_vpc",
+          "name": "main",
+          "values": {
+            "cidr_block": "10.0.0.0/16",
+            "enable_dns_hostnames": true,
+            "enable_dns_support": true,
+            "tags": {
+              "Name": "imladris-dev-vpc",
+              "Environment": "dev",
+              "Project": "Imladris"
+            }
+          }
+        },
+        {
+          "address": "module.networking.aws_subnet.private[0]",
+          "type": "aws_subnet",
+          "name": "private",
+          "values": {
+            "cidr_block": "10.0.1.0/24",
+            "availability_zone": "us-east-1a",
+            "map_public_ip_on_launch": false,
+            "tags": {
+              "Name": "imladris-dev-private-1a",
+              "Type": "private"
+            }
+          }
+        },
+        {
+          "address": "module.compute.aws_eks_fargate_profile.default",
+          "type": "aws_eks_fargate_profile",
+          "name": "default",
+          "values": {
+            "fargate_profile_name": "default-fargate",
+            "cluster_name": "imladris-dev-cluster",
+            "subnet_ids": ["subnet-private-1a", "subnet-private-1b"],
+            "selector": {
+              "namespace": "default"
+            }
+          }
+        },
+        {
+          "address": "module.networking.aws_vpclattice_service_network.main",
+          "type": "aws_vpclattice_service_network",
+          "name": "main",
+          "values": {
+            "name": "imladris-dev-lattice",
+            "auth_type": "AWS_IAM",
+            "tags": {
+              "Name": "imladris-dev-service-network"
+            }
+          }
+        },
+        {
+          "address": "module.governance.aws_config_config_rule.no_public_ingress",
+          "type": "aws_config_config_rule",
+          "name": "no_public_ingress",
+          "values": {
+            "name": "no-public-ingress",
+            "source": {
+              "owner": "AWS",
+              "source_identifier": "SECURITY_GROUP_OPEN_TO_WORLD_CHECK"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "configuration": {
+    "provider_config": {
+      "aws": {
+        "expressions": {
+          "region": {
+            "constant_value": "us-east-1"
+          }
+        }
+      }
+    }
+  }
+}

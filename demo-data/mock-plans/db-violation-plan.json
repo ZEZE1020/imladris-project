@@ -1,0 +1,40 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.6.0",
+  "planned_values": {},
+  "resource_changes": [
+    {
+      "address": "module.database.aws_rds_cluster.main",
+      "type": "aws_rds_cluster",
+      "name": "main",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["create"],
+        "after": {
+          "cluster_identifier": "imladris-prod-aurora",
+          "engine": "aurora-postgresql",
+          "engine_mode": "provisioned",
+          "storage_encrypted": false,
+          "iam_database_authentication_enabled": false,
+          "deletion_protection": false,
+          "backup_retention_period": 3,
+          "publicly_accessible": false
+        }
+      }
+    },
+    {
+      "address": "module.database.aws_rds_cluster_instance.writer",
+      "type": "aws_rds_cluster_instance",
+      "name": "writer",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["create"],
+        "after": {
+          "identifier": "imladris-prod-aurora-writer",
+          "instance_class": "db.serverless",
+          "publicly_accessible": true
+        }
+      }
+    }
+  ]
+}
