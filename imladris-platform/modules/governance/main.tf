@@ -102,6 +102,30 @@ resource "aws_s3_bucket_logging" "config" {
   target_prefix = "access-logs/"
 }
 
+# S3 Bucket Lifecycle Configuration
+resource "aws_s3_bucket_lifecycle_configuration" "config" {
+  bucket = aws_s3_bucket.config.id
+
+  rule {
+    id     = "config-retention"
+    status = "Enabled"
+
+    transition {
+      days          = 90
+      storage_class = "STANDARD_IA"
+    }
+
+    transition {
+      days          = 180
+      storage_class = "GLACIER"
+    }
+
+    expiration {
+      days = 730
+    }
+  }
+}
+
 resource "aws_s3_bucket_policy" "config_bucket_policy" {
   bucket = aws_s3_bucket.config.id
 
