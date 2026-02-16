@@ -26,13 +26,15 @@
 - [ ] All 5 users have received SSO invitations
 
 ### Test Accounts
+> **Note:** The email addresses below are example placeholders. Replace them with actual test account emails in your environment before deployment.
+
 | User | Email | Role | Permission Set |
 |------|-------|------|----------------|
-| sarah.finops | ogembogodfrey75+sarah.finops@gmail.com | FinOps Analyst | ImladrisFinOpsAnalyst |
-| alex.devops | ogembogodfrey75+alex.devops@gmail.com | Senior DevOps | ImladrisSeniorDevOps |
-| jamie.devops | ogembogodfrey75+jamie.devops@gmail.com | Junior DevOps | ImladrisJuniorDevOps |
-| mike.dev | ogembogodfrey75+mike.dev@gmail.com | Backend Dev | ImladrisBackendDeveloper |
-| lisa.dev | ogembogodfrey75+lisa.dev@gmail.com | Frontend Dev | ImladrisFrontendDeveloper |
+| sarah.finops | sarah.finops@example.com | FinOps Analyst | ImladrisFinOpsAnalyst |
+| alex.devops | alex.devops@example.com | Senior DevOps | ImladrisSeniorDevOps |
+| jamie.devops | jamie.devops@example.com | Junior DevOps | ImladrisJuniorDevOps |
+| mike.dev | mike.dev@example.com | Backend Dev | ImladrisBackendDeveloper |
+| lisa.dev | lisa.dev@example.com | Frontend Dev | ImladrisFrontendDeveloper |
 
 ### SSO Login URL
 ```
@@ -395,6 +397,14 @@ spec:
 ---
 
 ## Phase 5: End-to-End Workflow Testing
+
+> ⚠️ **WARNING: This phase includes intentionally creating security violations for testing.**
+> 
+> - **NEVER run these tests in production environments**
+> - Requires proper change control and approval even in dev/test environments
+> - Tests should only be executed in isolated, non-critical environments
+> - Ensure you have rollback procedures ready before testing
+> - Document all test activities for audit compliance
 
 ### 5.1 Complete GitOps Deployment Flow
 

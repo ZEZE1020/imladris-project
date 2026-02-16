@@ -1,6 +1,6 @@
 {
-  "remediation_id": "rem-2026021012345",
-  "timestamp": "2026-02-10T14:30:00Z",
+  "remediation_id": "rem-demo-12345",
+  "timestamp": "2026-03-15T14:30:00Z",
   "status": "SUCCESS",
   "config_rule": "no-public-ingress",
   "resource": {
@@ -11,7 +11,7 @@
   "violation": {
     "type": "SECURITY_GROUP_OPEN_TO_WORLD",
     "details": "Ingress rule allowed SSH (port 22) from 0.0.0.0/0",
-    "detected_at": "2026-02-10T14:29:55Z"
+    "detected_at": "2026-03-15T14:29:55Z"
   },
   "remediation": {
     "action": "REVOKE_INGRESS_RULE",
@@ -28,5 +28,6 @@
   "audit": {
     "cloudwatch_log_group": "/aws/config/remediation",
     "cloudtrail_event_id": "abc123-def456-xyz789"
-  }
+  },
+  "_comment": "NOTE: Update timestamps before demos to ensure they appear current. Consider using scripts to generate dynamic timestamps."
 }
