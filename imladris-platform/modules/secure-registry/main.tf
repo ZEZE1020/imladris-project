@@ -152,7 +152,7 @@ resource "aws_iam_policy" "harbor_permissions" {
           "logs:PutLogEvents",
           "logs:DescribeLogStreams"
         ]
-        Resource = "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/harbor/*"
+        Resource = "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/harbor/${var.environment}/*"
       },
       {
         Sid    = "AllowSSMParameters"
