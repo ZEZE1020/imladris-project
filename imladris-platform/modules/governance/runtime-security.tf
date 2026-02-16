@@ -176,6 +176,28 @@ resource "aws_lambda_function" "security_remediation" {
   }
 }
 
+# CloudWatch alarm for Lambda throttles
+resource "aws_cloudwatch_metric_alarm" "lambda_throttles" {
+  alarm_name          = "imladris-security-remediation-throttles"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "Throttles"
+  namespace           = "AWS/Lambda"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 5
+  alarm_description   = "Security remediation Lambda is being throttled - consider increasing reserved concurrency"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    FunctionName = aws_lambda_function.security_remediation.function_name
+  }
+
+  tags = {
+    Name = "imladris-security-remediation-throttles-alarm"
+  }
+}
+
 # Lambda function code for security remediation
 data "archive_file" "remediation_lambda_zip" {
   type        = "zip"
@@ -398,6 +420,11 @@ resource "aws_iam_role_policy" "lambda_remediation_policy" {
           "ec2:RevokeSecurityGroupEgress"
         ]
         Resource = "arn:aws:ec2:*:${data.aws_caller_identity.current.account_id}:security-group/*"
+        Condition = {
+          StringEquals = {
+            "ec2:ResourceTag/ManagedBy" = "Imladris"
+          }
+        }
       },
       {
         Effect = "Allow"
@@ -511,10 +538,48 @@ resource "aws_kms_key" "lambda_env" {
   }
 }
 
+# KMS key for Lambda DLQ SQS queue encryption
+resource "aws_kms_key" "lambda_dlq_encryption" {
+  description             = "CMK for Lambda DLQ SQS queue encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow SQS Service"
+        Effect = "Allow"
+        Principal = {
+          Service = "sqs.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey*"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = {
+    Name = "imladris-lambda-dlq-encryption-key"
+  }
+}
+
 # SQS Dead Letter Queue for Lambda
 resource "aws_sqs_queue" "lambda_dlq" {
   name                       = "imladris-security-remediation-dlq"
-  kms_master_key_id          = aws_kms_key.sns_encryption.arn
+  kms_master_key_id          = aws_kms_key.lambda_dlq_encryption.arn
   message_retention_seconds  = 1209600  # 14 days
 
   tags = {
@@ -651,6 +716,36 @@ resource "aws_kms_key" "ecr_encryption" {
 
   tags = {
     Name = "imladris-ecr-encryption-key"
+  }
+}
+
+# CloudWatch alarms for KMS key availability
+resource "aws_cloudwatch_log_metric_filter" "kms_key_deletion" {
+  name           = "imladris-kms-key-deletion-filter"
+  log_group_name = "/aws/cloudtrail/imladris"
+  pattern        = "{ ($.eventName = ScheduleKeyDeletion) || ($.eventName = DisableKey) }"
+
+  metric_transformation {
+    name      = "KMSKeyDeletionOrDisabled"
+    namespace = "Imladris/Security"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "kms_key_deletion_alarm" {
+  alarm_name          = "imladris-kms-key-deletion-or-disabled"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "KMSKeyDeletionOrDisabled"
+  namespace           = "Imladris/Security"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 1
+  alarm_description   = "Alert when KMS keys are scheduled for deletion or disabled - may impact ECR, SNS, SQS, and other encrypted services"
+  treat_missing_data  = "notBreaching"
+
+  tags = {
+    Name = "imladris-kms-key-deletion-alarm"
   }
 }
 

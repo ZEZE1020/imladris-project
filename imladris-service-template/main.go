@@ -170,6 +170,11 @@ func (app *App) connectDB() error {
 	var dsn string
 	if app.Config.DBIAMAuth {
 		// Generate IAM auth token (short-lived, replaces passwords)
+		// NOTE: The IAM auth token is built once during connection establishment and
+		// has a 15-minute expiration. For production-grade solutions, consider implementing
+		// a custom connector or connection interceptor that regenerates IAM tokens on each
+		// connection attempt (e.g., using pgx BeforeConnect hooks). The current approach
+		// relies on connection pool rotation (SetConnMaxLifetime) to prevent token expiry.
 		cfg, err := config.LoadDefaultConfig(context.TODO(),
 			config.WithRegion(app.Config.AWSRegion),
 		)
@@ -194,10 +199,14 @@ func (app *App) connectDB() error {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
 
-	// Connection pool settings
+	// Connection pool settings.
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(5)
-	db.SetConnMaxLifetime(10 * time.Minute) // Rotate before IAM token expires (15m)
+	// Use a max connection lifetime well below the 15m IAM auth token expiry to reduce
+	// the chance of using a connection with an about-to-expire token. Note: very
+	// long-running queries that exceed the token lifetime may still fail due to
+	// token expiration; callers should ensure appropriate query timeouts.
+	db.SetConnMaxLifetime(5 * time.Minute)
 	db.SetConnMaxIdleTime(5 * time.Minute)
 
 	// Verify connectivity
@@ -260,10 +269,26 @@ func (app *App) healthHandler(w http.ResponseWriter, r *http.Request) {
 
 // Readiness check handler
 func (app *App) readyHandler(w http.ResponseWriter, r *http.Request) {
-	// Simplified readiness check
+	// Check if database is required and configured
+	dbRequired := os.Getenv("DB_HOST") != ""
+	dbReady := app.DB != nil
+
 	w.Header().Set("Content-Type", "application/json")
+
+	// If database is required but not ready, fail the readiness check
+	if dbRequired && !dbReady {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":    "not ready",
+			"reason":    "database not configured",
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
-		"status": "ready",
+		"status":    "ready",
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 	})
 }
@@ -274,6 +299,14 @@ func (app *App) accountHandler(w http.ResponseWriter, r *http.Request) {
 	accountID := r.URL.Query().Get("account_id")
 	if accountID == "" {
 		accountID = "ACC-123456789"
+	}
+
+	// Validate account ID format (alphanumeric, dashes, max 50 chars)
+	if len(accountID) > 50 || !isValidAccountID(accountID) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid account_id format"})
+		return
 	}
 
 	var response AccountResponse
@@ -289,18 +322,18 @@ func (app *App) accountHandler(w http.ResponseWriter, r *http.Request) {
 		).Scan(&response.AccountID, &response.Balance, &response.Currency,
 			&response.Status, &response.LastUpdated)
 
-		if err == sql.ErrNoRows {
-			businessOperationsTotal.WithLabelValues("get_account", "not_found").Inc()
+		if err != nil {
+			if err == sql.ErrNoRows {
+				businessOperationsTotal.WithLabelValues("get_account", "not_found").Inc()
+			} else {
+				businessOperationsTotal.WithLabelValues("get_account", "error").Inc()
+				log.Printf("Database error for account %s: %v", accountID, err)
+			}
 			w.Header().Set("Content-Type", "application/json")
+			// Return the same status and message for both not-found and DB errors
+			// to prevent account enumeration via timing attacks
 			w.WriteHeader(http.StatusNotFound)
 			json.NewEncoder(w).Encode(map[string]string{"error": "account not found"})
-			return
-		} else if err != nil {
-			businessOperationsTotal.WithLabelValues("get_account", "error").Inc()
-			log.Printf("Database error for account %s: %v", accountID, err)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": "internal server error"})
 			return
 		}
 	} else {
@@ -321,6 +354,17 @@ func (app *App) accountHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 
 	log.Printf("Account request for %s from %s", accountID, r.RemoteAddr)
+}
+
+// isValidAccountID validates the account ID format (alphanumeric and dashes only)
+func isValidAccountID(id string) bool {
+	for _, ch := range id {
+		if !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || 
+			(ch >= '0' && ch <= '9') || ch == '-') {
+			return false
+		}
+	}
+	return true
 }
 
 // VPC Lattice service discovery handler
@@ -417,6 +461,12 @@ func (app *App) shutdown(ctx context.Context) error {
 func main() {
 	// Load configuration
 	config := loadConfig()
+
+	// Safety check: prevent DEMO_MODE in production
+	demoMode := os.Getenv("DEMO_MODE")
+	if demoMode == "true" && config.Environment == "prod" {
+		log.Fatal("FATAL: DEMO_MODE cannot be enabled in production environment")
+	}
 
 	// Create application
 	app := &App{Config: config}

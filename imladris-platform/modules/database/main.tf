@@ -26,14 +26,8 @@ resource "aws_security_group" "aurora" {
     cidr_blocks = [var.vpc_cidr]
   }
 
-  # No egress needed — Aurora is a managed service
-  egress {
-    description = "Allow responses back to VPC"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = [var.vpc_cidr]
-  }
+  # No egress needed — Aurora is a managed service that only responds to inbound connections
+  # AWS managed services handle their own operational traffic without explicit egress rules
 
   tags = {
     Name = "imladris-${var.environment}-aurora-sg"
@@ -102,7 +96,11 @@ resource "aws_rds_cluster" "main" {
   # IAM Authentication — Zero Trust, no passwords in app code
   iam_database_authentication_enabled = true
 
-  # Master credentials stored in Secrets Manager (rotated automatically)
+  # Master credentials stored in Secrets Manager (rotated automatically).
+  # This secret is for controlled, non-routine use only (e.g., initial DB setup,
+  # emergency break-glass access, or administrative recovery). Normal application
+  # access MUST use IAM auth. Access to this secret should be monitored and alerted
+  # via CloudTrail/CloudWatch in the wider platform to detect potential security incidents.
   manage_master_user_password   = true
   master_username               = var.master_username
   master_user_secret_kms_key_id = aws_kms_key.aurora.key_id
@@ -182,6 +180,10 @@ resource "aws_rds_cluster_instance" "reader" {
 
 # ===== IAM ROLE FOR POD-LEVEL DATABASE ACCESS =====
 # EKS pods assume this role via IRSA to get IAM auth tokens
+# PREREQUISITE: Ensure the Kubernetes namespace and ServiceAccount specified in
+# var.app_namespace and var.app_service_account exist in the EKS cluster before
+# applying this Terraform configuration. If these resources don't exist, pods will
+# fail to authenticate to the database at runtime with IRSA errors.
 resource "aws_iam_role" "db_access" {
   name = "imladris-${var.environment}-db-access"
 
@@ -259,6 +261,7 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
   statistic           = "Average"
   threshold           = 80
   alarm_description   = "Aurora CPU utilization above 80% for 15 minutes"
+  alarm_actions       = var.alarm_sns_topic_arn != "" ? [var.alarm_sns_topic_arn] : []
 
   dimensions = {
     DBClusterIdentifier = aws_rds_cluster.main.cluster_identifier
@@ -279,6 +282,7 @@ resource "aws_cloudwatch_metric_alarm" "freeable_memory" {
   statistic           = "Average"
   threshold           = 256000000 # 256 MB
   alarm_description   = "Aurora freeable memory below 256MB for 15 minutes"
+  alarm_actions       = var.alarm_sns_topic_arn != "" ? [var.alarm_sns_topic_arn] : []
 
   dimensions = {
     DBClusterIdentifier = aws_rds_cluster.main.cluster_identifier

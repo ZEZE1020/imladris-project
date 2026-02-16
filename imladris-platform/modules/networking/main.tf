@@ -188,12 +188,30 @@ resource "aws_vpclattice_service_network_vpc_association" "main" {
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
-# Restrict the default security group to deny all traffic
+# Manage the default security group while preserving AWS default behavior
 resource "aws_default_security_group" "default" {
   vpc_id = aws_vpc.main.id
 
+  # Preserve AWS default: allow all traffic from instances associated
+  # with this security group (self-referencing ingress).
+  ingress {
+    protocol  = "-1"
+    from_port = 0
+    to_port   = 0
+    self      = true
+  }
+
+  # Preserve AWS default: allow all outbound traffic.
+  egress {
+    protocol         = "-1"
+    from_port        = 0
+    to_port          = 0
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
   tags = {
-    Name = "imladris-${var.environment}-default-sg-restricted"
+    Name = "imladris-${var.environment}-default-sg"
   }
 }
 

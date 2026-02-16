@@ -97,3 +97,9 @@ variable "app_db_username" {
   type        = string
   default     = "banking_app"
 }
+
+variable "alarm_sns_topic_arn" {
+  description = "SNS topic ARN for CloudWatch alarm notifications (optional)"
+  type        = string
+  default     = ""
+}

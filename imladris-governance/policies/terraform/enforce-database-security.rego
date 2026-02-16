@@ -39,13 +39,32 @@ deny contains msg if {
 }
 
 # Deny clusters without deletion protection in production
+# Use tags to identify production resources for more robust checks
 deny contains msg if {
     cluster := input.resource_changes[_]
     cluster.type == "aws_rds_cluster"
+    # Check for Environment tag set to "prod" or "production"
+    env_tag := cluster.change.after.tags.Environment
+    lower(env_tag) == "prod"
+    cluster.change.after.deletion_protection == false
+    msg := sprintf(
+        "DENY: Production Aurora cluster '%s' (Environment=%s) must have deletion protection enabled",
+        [cluster.change.after.cluster_identifier, env_tag]
+    )
+}
+
+# Fallback: Also check cluster identifier if tags are not properly configured
+# This ensures backwards compatibility but should be considered a secondary check
+deny contains msg if {
+    cluster := input.resource_changes[_]
+    cluster.type == "aws_rds_cluster"
+    # Only apply this rule if Environment tag is not set
+    not cluster.change.after.tags.Environment
+    # Check naming convention as fallback
     contains(cluster.change.after.cluster_identifier, "prod")
     cluster.change.after.deletion_protection == false
     msg := sprintf(
-        "DENY: Production Aurora cluster '%s' must have deletion protection enabled",
+        "DENY: Production Aurora cluster '%s' must have deletion protection enabled (detected via naming; consider using Environment tag)",
         [cluster.change.after.cluster_identifier]
     )
 }

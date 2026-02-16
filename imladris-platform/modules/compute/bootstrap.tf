@@ -271,7 +271,11 @@ resource "aws_iam_role_policy" "codebuild_policy" {
           "ec2:CreateNetworkInterface",
           "ec2:DeleteNetworkInterface"
         ]
-        Resource = "arn:aws:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*"
+        Resource = [
+          "arn:aws:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:network-interface/*",
+          "arn:aws:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:subnet/*",
+          "arn:aws:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:security-group/*"
+        ]
       },
       {
         Effect = "Allow"

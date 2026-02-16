@@ -1,6 +1,10 @@
 """
 Demo Mode Wrapper for Drift Enforcement Lambda
 Provides mock responses when DEMO_MODE=true for webinar presentations.
+
+⚠️  WARNING: DEMO_MODE should NEVER be enabled in production environments.
+⚠️  This mode bypasses actual security enforcement and returns mock data.
+⚠️  Use only in isolated demo/development environments with proper safeguards.
 """
 
 import os
@@ -97,7 +101,9 @@ def demo_lambda_handler(event: dict, context: Any) -> Dict[str, Any]:
     """
     logger.info("[DEMO MODE] Processing simulated event")
     
-    # Simulate processing delay for realism
+    # Simulate processing delay for realism in demo scenarios.
+    # NOTE: This sleep adds to Lambda billed duration. In real deployments,
+    # ensure DEMO_MODE is never enabled in production to avoid unnecessary costs.
     import time
     time.sleep(0.5)
     
@@ -145,9 +151,9 @@ def wrap_handler_with_demo_fallback(real_handler):
             logger.error(f"Real handler failed: {e}")
             logger.info("[FALLBACK] Switching to demo mode response")
             
-            # Return graceful fallback instead of crashing
+            # Return error response with appropriate HTTP status code
             return {
-                "statusCode": 200,
+                "statusCode": 500,
                 "body": json.dumps({
                     "fallback_mode": True,
                     "original_error": str(e),

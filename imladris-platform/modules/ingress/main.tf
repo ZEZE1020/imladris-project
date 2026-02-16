@@ -241,13 +241,36 @@ resource "aws_s3_bucket_versioning" "nlb_access_logs" {
   }
 }
 
-# S3 Bucket Logging for NLB access logs (self-logging)
+# Dedicated S3 Bucket for logging of the NLB access logs bucket (to avoid self-logging loop)
+resource "aws_s3_bucket" "nlb_access_logs_logs" {
+  count = var.enable_access_logging ? 1 : 0
+
+  bucket = "imladris-${var.environment}-nlb-access-logs-logs-${random_string.suffix.result}"
+
+  tags = {
+    Name        = "imladris-${var.environment}-nlb-access-logs-logs"
+    Environment = var.environment
+  }
+}
+
+# Block public access for the logs-of-logs bucket
+resource "aws_s3_bucket_public_access_block" "nlb_access_logs_logs" {
+  count  = var.enable_access_logging ? 1 : 0
+  bucket = aws_s3_bucket.nlb_access_logs_logs[0].id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# S3 Bucket Logging for NLB access logs (logs go to a separate bucket to avoid self-logging loop)
 resource "aws_s3_bucket_logging" "nlb_access_logs" {
   count  = var.enable_access_logging ? 1 : 0
   bucket = aws_s3_bucket.nlb_access_logs[0].id
 
-  target_bucket = aws_s3_bucket.nlb_access_logs[0].id
-  target_prefix = "access-logs/"
+  target_bucket = aws_s3_bucket.nlb_access_logs_logs[0].id
+  target_prefix = "nlb-access-logs/"
 }
 
 # S3 Bucket Lifecycle Configuration
