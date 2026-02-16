@@ -107,6 +107,26 @@ spec:
               name: platform-config
               key: aws_region
 
+        # Database Configuration (Aurora Serverless v2 + IAM Auth)
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: platform-config
+              key: db_host
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: platform-config
+              key: db_name
+        - name: DB_USER
+          value: "banking_app"
+        - name: DB_SSL_MODE
+          value: "require"
+        - name: DB_IAM_AUTH
+          value: "true"
+
         # Resource Limits
         resources:
           limits:
@@ -202,7 +222,8 @@ metadata:
     app.kubernetes.io/name: banking-core-service
     app.kubernetes.io/part-of: imladris-platform
   annotations:
-    eks.amazonaws.com/role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/imladris-${ENVIRONMENT}-banking-core-role"
+    # IRSA: Grants pods IAM auth to Aurora (rds-db:connect) — no static DB passwords
+    eks.amazonaws.com/role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/imladris-${ENVIRONMENT}-db-access"
 automountServiceAccountToken: true
 
 ---
@@ -221,3 +242,5 @@ data:
   vpc_lattice_service_network: "imladris-${ENVIRONMENT}-lattice"
   log_level: "info"
   metrics_enabled: "true"
+  db_host: "${AURORA_CLUSTER_ENDPOINT}"
+  db_name: "${AURORA_DATABASE_NAME}"

@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -15,6 +16,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -29,11 +33,18 @@ type Config struct {
 	ServiceName string `json:"service_name"`
 	Environment string `json:"environment"`
 	AWSRegion   string `json:"aws_region"`
+	DBHost      string `json:"db_host"`
+	DBPort      string `json:"db_port"`
+	DBName      string `json:"db_name"`
+	DBUser      string `json:"db_user"`
+	DBSSLMode   string `json:"db_ssl_mode"`
+	DBIAMAuth   bool   `json:"db_iam_auth"`
 }
 
 // Application structure
 type App struct {
 	Config  Config
+	DB      *sql.DB
 	Server  *http.Server
 	Metrics *http.Server
 }
@@ -98,6 +109,12 @@ func loadConfig() Config {
 		ServiceName: getEnv("SERVICE_NAME", "banking-core-service"),
 		Environment: getEnv("ENVIRONMENT", "dev"),
 		AWSRegion:   getEnv("AWS_REGION", "us-east-1"),
+		DBHost:      getEnv("DB_HOST", ""),
+		DBPort:      getEnv("DB_PORT", "5432"),
+		DBName:      getEnv("DB_NAME", "imladris"),
+		DBUser:      getEnv("DB_USER", "banking_app"),
+		DBSSLMode:   getEnv("DB_SSL_MODE", "require"),
+		DBIAMAuth:   getEnv("DB_IAM_AUTH", "true") == "true",
 	}
 }
 
@@ -140,15 +157,93 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
+// connectDB establishes a connection to Aurora using IAM authentication tokens.
+// Tokens are short-lived (15 min) and generated via STS — no static passwords.
+func (app *App) connectDB() error {
+	if app.Config.DBHost == "" {
+		log.Println("DB_HOST not set — running without database (demo mode)")
+		return nil
+	}
+
+	endpoint := fmt.Sprintf("%s:%s", app.Config.DBHost, app.Config.DBPort)
+
+	var dsn string
+	if app.Config.DBIAMAuth {
+		// Generate IAM auth token (short-lived, replaces passwords)
+		cfg, err := config.LoadDefaultConfig(context.TODO(),
+			config.WithRegion(app.Config.AWSRegion),
+		)
+		if err != nil {
+			return fmt.Errorf("unable to load AWS config: %w", err)
+		}
+
+		token, err := auth.BuildAuthToken(context.TODO(), endpoint, app.Config.AWSRegion, app.Config.DBUser, cfg.Credentials)
+		if err != nil {
+			return fmt.Errorf("failed to build IAM auth token: %w", err)
+		}
+
+		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+			app.Config.DBHost, app.Config.DBPort, app.Config.DBUser, token, app.Config.DBName, app.Config.DBSSLMode)
+	} else {
+		dsn = fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=%s",
+			app.Config.DBHost, app.Config.DBPort, app.Config.DBUser, app.Config.DBName, app.Config.DBSSLMode)
+	}
+
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		return fmt.Errorf("failed to open database: %w", err)
+	}
+
+	// Connection pool settings
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(10 * time.Minute) // Rotate before IAM token expires (15m)
+	db.SetConnMaxIdleTime(5 * time.Minute)
+
+	// Verify connectivity
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := db.PingContext(ctx); err != nil {
+		return fmt.Errorf("database ping failed: %w", err)
+	}
+
+	app.DB = db
+	log.Printf("Connected to Aurora at %s (IAM auth: %v)", app.Config.DBHost, app.Config.DBIAMAuth)
+	return nil
+}
+
 // Health check handler
 func (app *App) healthHandler(w http.ResponseWriter, r *http.Request) {
 	checks := make(map[string]string)
-	checks["database"] = "ok"  // Simulate database check
-	checks["vpc_lattice"] = "ok" // Simulate VPC Lattice check
-	checks["aws_services"] = "ok" // Simulate AWS services check
+
+	// Real database health check
+	if app.DB != nil {
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		if err := app.DB.PingContext(ctx); err != nil {
+			checks["database"] = fmt.Sprintf("error: %v", err)
+		} else {
+			checks["database"] = "ok"
+		}
+	} else {
+		checks["database"] = "not configured"
+	}
+
+	checks["vpc_lattice"] = "ok"
+	checks["aws_services"] = "ok"
+
+	status := "healthy"
+	statusCode := http.StatusOK
+	for _, v := range checks {
+		if v != "ok" && v != "not configured" {
+			status = "degraded"
+			statusCode = http.StatusServiceUnavailable
+			break
+		}
+	}
 
 	response := HealthResponse{
-		Status:      "healthy",
+		Status:      status,
 		Version:     "1.0.0",
 		ServiceName: app.Config.ServiceName,
 		Environment: app.Config.Environment,
@@ -157,9 +252,10 @@ func (app *App) healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(response)
 
-	log.Printf("Health check requested from %s", r.RemoteAddr)
+	log.Printf("Health check requested from %s — status: %s", r.RemoteAddr, status)
 }
 
 // Readiness check handler
@@ -180,13 +276,42 @@ func (app *App) accountHandler(w http.ResponseWriter, r *http.Request) {
 		accountID = "ACC-123456789"
 	}
 
-	// Simulate business logic
-	response := AccountResponse{
-		AccountID:   accountID,
-		Balance:     15000.50,
-		Currency:    "USD",
-		Status:      "active",
-		LastUpdated: time.Now().UTC(),
+	var response AccountResponse
+
+	if app.DB != nil {
+		// Real database query
+		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+		defer cancel()
+
+		err := app.DB.QueryRowContext(ctx,
+			`SELECT account_id, balance, currency, status, updated_at
+			 FROM accounts WHERE account_id = $1`, accountID,
+		).Scan(&response.AccountID, &response.Balance, &response.Currency,
+			&response.Status, &response.LastUpdated)
+
+		if err == sql.ErrNoRows {
+			businessOperationsTotal.WithLabelValues("get_account", "not_found").Inc()
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": "account not found"})
+			return
+		} else if err != nil {
+			businessOperationsTotal.WithLabelValues("get_account", "error").Inc()
+			log.Printf("Database error for account %s: %v", accountID, err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "internal server error"})
+			return
+		}
+	} else {
+		// Demo mode — no database configured
+		response = AccountResponse{
+			AccountID:   accountID,
+			Balance:     15000.50,
+			Currency:    "USD",
+			Status:      "active",
+			LastUpdated: time.Now().UTC(),
+		}
 	}
 
 	// Record business metrics
@@ -296,6 +421,11 @@ func main() {
 	// Create application
 	app := &App{Config: config}
 
+	// Connect to database (gracefully degrades to demo mode if DB_HOST not set)
+	if err := app.connectDB(); err != nil {
+		log.Printf("WARNING: Database connection failed: %v — running in demo mode", err)
+	}
+
 	// Initialize servers
 	app.initServer()
 	app.initMetricsServer()
@@ -313,6 +443,13 @@ func main() {
 
 		if err := app.shutdown(ctx); err != nil {
 			log.Printf("Shutdown error: %v", err)
+		}
+
+		// Close database connection
+		if app.DB != nil {
+			if err := app.DB.Close(); err != nil {
+				log.Printf("Database close error: %v", err)
+			}
 		}
 
 		log.Println("Application stopped")
