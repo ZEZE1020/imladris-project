@@ -153,6 +153,16 @@ resource "aws_lambda_function" "security_remediation" {
   handler         = "index.handler"
   runtime         = "python3.11"
   timeout         = 300
+  reserved_concurrent_executions = 10
+  kms_key_arn     = aws_kms_key.lambda_env.arn
+
+  tracing_config {
+    mode = "Active"
+  }
+
+  dead_letter_config {
+    target_arn = aws_sqs_queue.lambda_dlq.arn
+  }
 
   environment {
     variables = {
@@ -163,6 +173,28 @@ resource "aws_lambda_function" "security_remediation" {
 
   tags = {
     Name = "imladris-security-remediation"
+  }
+}
+
+# CloudWatch alarm for Lambda throttles
+resource "aws_cloudwatch_metric_alarm" "lambda_throttles" {
+  alarm_name          = "imladris-security-remediation-throttles"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "Throttles"
+  namespace           = "AWS/Lambda"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 5
+  alarm_description   = "Security remediation Lambda is being throttled - consider increasing reserved concurrency"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    FunctionName = aws_lambda_function.security_remediation.function_name
+  }
+
+  tags = {
+    Name = "imladris-security-remediation-throttles-alarm"
   }
 }
 
@@ -377,13 +409,57 @@ resource "aws_iam_role_policy" "lambda_remediation_policy" {
       {
         Effect = "Allow"
         Action = [
-          "ec2:DescribeSecurityGroups",
+          "ec2:DescribeSecurityGroups"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
           "ec2:RevokeSecurityGroupIngress",
-          "ec2:RevokeSecurityGroupEgress",
+          "ec2:RevokeSecurityGroupEgress"
+        ]
+        Resource = "arn:aws:ec2:*:${data.aws_caller_identity.current.account_id}:security-group/*"
+        Condition = {
+          StringEquals = {
+            "ec2:ResourceTag/ManagedBy" = "Imladris"
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Action = [
           "eks:DescribeCluster",
-          "eks:UpdateClusterConfig",
-          "sns:Publish",
+          "eks:UpdateClusterConfig"
+        ]
+        Resource = "arn:aws:eks:*:${data.aws_caller_identity.current.account_id}:cluster/imladris-*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sns:Publish"
+        ]
+        Resource = aws_sns_topic.security_alerts.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
           "config:GetComplianceDetailsByConfigRule"
+        ]
+        Resource = "arn:aws:config:*:${data.aws_caller_identity.current.account_id}:config-rule/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage"
+        ]
+        Resource = aws_sqs_queue.lambda_dlq.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords"
         ]
         Resource = "*"
       }
@@ -393,10 +469,121 @@ resource "aws_iam_role_policy" "lambda_remediation_policy" {
 
 # SNS topic for security alerts
 resource "aws_sns_topic" "security_alerts" {
-  name = "imladris-security-alerts"
-  
+  name              = "imladris-security-alerts"
+  kms_master_key_id = aws_kms_key.sns_encryption.arn
+
   tags = {
     Name = "imladris-security-alerts"
+  }
+}
+
+# KMS key for SNS topic encryption
+resource "aws_kms_key" "sns_encryption" {
+  description             = "CMK for SNS security alerts topic encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow SNS Service"
+        Effect = "Allow"
+        Principal = {
+          Service = "sns.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey*"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow EventBridge"
+        Effect = "Allow"
+        Principal = {
+          Service = "events.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey*"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = {
+    Name = "imladris-sns-encryption-key"
+  }
+}
+
+# KMS key for Lambda environment variable encryption
+resource "aws_kms_key" "lambda_env" {
+  description             = "CMK for Lambda environment variable encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  tags = {
+    Name = "imladris-lambda-env-key"
+  }
+}
+
+# KMS key for Lambda DLQ SQS queue encryption
+resource "aws_kms_key" "lambda_dlq_encryption" {
+  description             = "CMK for Lambda DLQ SQS queue encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow SQS Service"
+        Effect = "Allow"
+        Principal = {
+          Service = "sqs.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey*"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = {
+    Name = "imladris-lambda-dlq-encryption-key"
+  }
+}
+
+# SQS Dead Letter Queue for Lambda
+resource "aws_sqs_queue" "lambda_dlq" {
+  name                       = "imladris-security-remediation-dlq"
+  kms_master_key_id          = aws_kms_key.lambda_dlq_encryption.arn
+  message_retention_seconds  = 1209600  # 14 days
+
+  tags = {
+    Name = "imladris-security-remediation-dlq"
   }
 }
 
@@ -494,7 +681,8 @@ resource "aws_ecr_repository" "banking_core" {
   }
 
   encryption_configuration {
-    encryption_type = "AES256"
+    encryption_type = "KMS"
+    kms_key         = aws_kms_key.ecr_encryption.arn
   }
 
   tags = {
@@ -511,11 +699,53 @@ resource "aws_ecr_repository" "banking_ui" {
   }
 
   encryption_configuration {
-    encryption_type = "AES256"
+    encryption_type = "KMS"
+    kms_key         = aws_kms_key.ecr_encryption.arn
   }
 
   tags = {
     Name = "banking-ui-service"
+  }
+}
+
+# KMS key for ECR repository encryption
+resource "aws_kms_key" "ecr_encryption" {
+  description             = "CMK for ECR repository encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  tags = {
+    Name = "imladris-ecr-encryption-key"
+  }
+}
+
+# CloudWatch alarms for KMS key availability
+resource "aws_cloudwatch_log_metric_filter" "kms_key_deletion" {
+  name           = "imladris-kms-key-deletion-filter"
+  log_group_name = "/aws/cloudtrail/imladris"
+  pattern        = "{ ($.eventName = ScheduleKeyDeletion) || ($.eventName = DisableKey) }"
+
+  metric_transformation {
+    name      = "KMSKeyDeletionOrDisabled"
+    namespace = "Imladris/Security"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "kms_key_deletion_alarm" {
+  alarm_name          = "imladris-kms-key-deletion-or-disabled"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "KMSKeyDeletionOrDisabled"
+  namespace           = "Imladris/Security"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 1
+  alarm_description   = "Alert when KMS keys are scheduled for deletion or disabled - may impact ECR, SNS, SQS, and other encrypted services"
+  treat_missing_data  = "notBreaching"
+
+  tags = {
+    Name = "imladris-kms-key-deletion-alarm"
   }
 }
 

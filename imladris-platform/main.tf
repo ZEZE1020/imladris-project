@@ -89,3 +89,32 @@ module "compute" {
 #     module.compute
 #   ]
 # }
+
+# Database Module - Aurora Serverless v2 (PostgreSQL)
+# Zero Trust: IAM auth (no passwords in app code), private subnets only, KMS encryption
+module "database" {
+  source = "./modules/database"
+
+  environment        = var.environment
+  vpc_id             = module.networking.vpc_id
+  vpc_cidr           = var.vpc_cidr
+  private_subnet_ids = module.networking.private_subnet_ids
+
+  # Aurora configuration
+  engine_version        = var.aurora_engine_version
+  database_name         = var.aurora_database_name
+  min_capacity          = var.aurora_min_capacity
+  max_capacity          = var.aurora_max_capacity
+  reader_count          = var.aurora_reader_count
+  deletion_protection   = var.environment == "prod"
+  backup_retention_days = var.environment == "prod" ? 35 : 7
+
+  # IRSA — pods authenticate to Postgres via IAM, not passwords
+  eks_oidc_provider_arn = module.compute.oidc_provider_arn
+  eks_oidc_provider_url = module.compute.oidc_provider_url
+
+  depends_on = [
+    module.networking,
+    module.compute
+  ]
+}

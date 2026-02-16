@@ -1,5 +1,16 @@
 # Banking Core Service Deployment
 # Go microservice for core banking operations
+#
+# VARIABLE SUBSTITUTION:
+# This manifest uses template variables that must be substituted at deployment time:
+# - ${ECR_REGISTRY}: Container registry URL (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com)
+# - ${IMAGE_TAG}: Docker image tag (e.g., v1.0.0, latest, commit-abc123)
+# - ${CONFIG_CHECKSUM}: Checksum of ConfigMap to force pod restart on config changes
+# - ${AWS_ACCOUNT_ID}: AWS Account ID for IRSA role ARN (used in ServiceAccount annotation)
+# - ${ENVIRONMENT}: Environment name (e.g., dev, staging, prod)
+#
+# These variables should be replaced by your CI/CD pipeline (e.g., using envsubst, 
+# Kustomize with replacements, or Helm values) before applying to the cluster.
 
 apiVersion: apps/v1
 kind: Deployment
@@ -58,6 +69,56 @@ spec:
       serviceAccountName: banking-core-service
       automountServiceAccountToken: true
 
+      # Init Containers - validate database connectivity before starting main container
+      initContainers:
+      - name: db-connectivity-check
+        image: postgres:15-alpine
+        command:
+        - sh
+        - -c
+        - |
+          echo "Checking database connectivity..."
+          DB_HOST="${DB_HOST}"
+          DB_PORT="${DB_PORT:-5432}"
+          
+          if [ -z "$DB_HOST" ]; then
+            echo "ERROR: DB_HOST is not set"
+            exit 1
+          fi
+          
+          # Use pg_isready to check if database is reachable
+          max_attempts=30
+          attempt=0
+          while [ $attempt -lt $max_attempts ]; do
+            if pg_isready -h "$DB_HOST" -p "$DB_PORT" -U postgres -t 5; then
+              echo "Database is reachable at $DB_HOST:$DB_PORT"
+              exit 0
+            fi
+            attempt=$((attempt + 1))
+            echo "Database not ready, attempt $attempt/$max_attempts"
+            sleep 2
+          done
+          
+          echo "ERROR: Database is not reachable after $max_attempts attempts"
+          exit 1
+        env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: platform-config
+              key: db_host
+        - name: DB_PORT
+          value: "5432"
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 65534
+          runAsGroup: 65534
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+
       # Container specification
       containers:
       - name: banking-core
@@ -106,6 +167,26 @@ spec:
             configMapKeyRef:
               name: platform-config
               key: aws_region
+
+        # Database Configuration (Aurora Serverless v2 + IAM Auth)
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: platform-config
+              key: db_host
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: platform-config
+              key: db_name
+        - name: DB_USER
+          value: "banking_app"
+        - name: DB_SSL_MODE
+          value: "require"
+        - name: DB_IAM_AUTH
+          value: "true"
 
         # Resource Limits
         resources:
@@ -193,6 +274,8 @@ spec:
 
 ---
 # Service Account for Banking Core Service
+# PREREQUISITE: Ensure the corresponding IAM role exists in AWS before applying this manifest.
+# The role ARN must match the pattern below with actual AWS_ACCOUNT_ID and ENVIRONMENT values.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -202,7 +285,11 @@ metadata:
     app.kubernetes.io/name: banking-core-service
     app.kubernetes.io/part-of: imladris-platform
   annotations:
-    eks.amazonaws.com/role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/imladris-${ENVIRONMENT}-banking-core-role"
+    # IRSA: Grants pods IAM auth to Aurora (rds-db:connect) — no static DB passwords
+    # IMPORTANT: ${AWS_ACCOUNT_ID} and ${ENVIRONMENT} must be substituted at deployment time
+    # by your CI/CD pipeline or GitOps tool (e.g., using Kustomize, envsubst, or Helm).
+    # Example result: "arn:aws:iam::123456789012:role/imladris-prod-db-access"
+    eks.amazonaws.com/role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/imladris-${ENVIRONMENT}-db-access"
 automountServiceAccountToken: true
 
 ---
@@ -221,3 +308,5 @@ data:
   vpc_lattice_service_network: "imladris-${ENVIRONMENT}-lattice"
   log_level: "info"
   metrics_enabled: "true"
+  db_host: "${AURORA_CLUSTER_ENDPOINT}"
+  db_name: "${AURORA_DATABASE_NAME}"

@@ -188,6 +188,33 @@ resource "aws_vpclattice_service_network_vpc_association" "main" {
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
+# Manage the default security group while preserving AWS default behavior
+resource "aws_default_security_group" "default" {
+  vpc_id = aws_vpc.main.id
+
+  # Preserve AWS default: allow all traffic from instances associated
+  # with this security group (self-referencing ingress).
+  ingress {
+    protocol  = "-1"
+    from_port = 0
+    to_port   = 0
+    self      = true
+  }
+
+  # Preserve AWS default: allow all outbound traffic.
+  egress {
+    protocol         = "-1"
+    from_port        = 0
+    to_port          = 0
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {
+    Name = "imladris-${var.environment}-default-sg"
+  }
+}
+
 # VPC Flow Logs - Trivy: AVD-AWS-0178
 resource "aws_flow_log" "main" {
   iam_role_arn    = aws_iam_role.flow_logs.arn
@@ -202,7 +229,7 @@ resource "aws_flow_log" "main" {
 
 resource "aws_cloudwatch_log_group" "flow_logs" {
   name              = "/aws/vpc/imladris-${var.environment}-flow-logs"
-  retention_in_days = 30
+  retention_in_days = 365
   kms_key_id        = aws_kms_key.flow_logs.arn  # Trivy: AVD-AWS-0017
 
   tags = {
@@ -292,7 +319,7 @@ resource "aws_iam_role_policy" "flow_logs" {
           "logs:DescribeLogGroups",
           "logs:DescribeLogStreams"
         ]
-        Resource = "*"
+        Resource = "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/vpc/imladris-*"
       }
     ]
   })

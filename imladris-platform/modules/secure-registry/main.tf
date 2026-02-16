@@ -21,6 +21,58 @@ data "aws_ami" "amazon_linux" {
 resource "aws_kms_key" "registry_storage" {
   description             = "KMS key for Harbor registry encrypted storage"
   deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow EC2 Service"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.harbor_instance.arn
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey",
+          "kms:CreateGrant"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow CloudWatch Logs"
+        Effect = "Allow"
+        Principal = {
+          Service = "logs.${data.aws_region.current.name}.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt*",
+          "kms:Decrypt*",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:Describe*"
+        ]
+        Resource = "*"
+        Condition = {
+          ArnLike = {
+            "kms:EncryptionContext:aws:logs:arn" = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"
+          }
+        }
+      }
+    ]
+  })
 
   tags = {
     Name        = "${var.environment}-harbor-storage-key"
@@ -28,6 +80,8 @@ resource "aws_kms_key" "registry_storage" {
     Purpose     = "SecureRegistry"
   }
 }
+
+data "aws_caller_identity" "current" {}
 
 resource "aws_kms_alias" "registry_storage" {
   name          = "alias/${var.environment}-harbor-storage"
@@ -72,16 +126,25 @@ resource "aws_iam_policy" "harbor_permissions" {
     Version = "2012-10-17"
     Statement = [
       {
+        Sid    = "AllowECRAuth"
         Effect = "Allow"
         Action = [
-          "ecr:GetAuthorizationToken",
-          "ecr:BatchCheckLayerAvailability",
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage"
+          "ecr:GetAuthorizationToken"
         ]
         Resource = "*"
       },
       {
+        Sid    = "AllowECRPull"
+        Effect = "Allow"
+        Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ]
+        Resource = "arn:aws:ecr:*:${data.aws_caller_identity.current.account_id}:repository/*"
+      },
+      {
+        Sid    = "AllowCloudWatchLogs"
         Effect = "Allow"
         Action = [
           "logs:CreateLogGroup",
@@ -89,9 +152,10 @@ resource "aws_iam_policy" "harbor_permissions" {
           "logs:PutLogEvents",
           "logs:DescribeLogStreams"
         ]
-        Resource = "arn:aws:logs:*:*:*"
+        Resource = "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/harbor/${var.environment}/*"
       },
       {
+        Sid    = "AllowSSMParameters"
         Effect = "Allow"
         Action = [
           "ssm:GetParameter",
@@ -116,6 +180,8 @@ resource "aws_instance" "harbor_registry" {
   subnet_id              = var.private_subnet_ids[0]
   vpc_security_group_ids = [aws_security_group.harbor_registry.id]
   iam_instance_profile   = aws_iam_instance_profile.harbor_instance.name
+  monitoring             = true
+  ebs_optimized          = true
 
   # Require IMDSv2 for enhanced security (prevents SSRF attacks)
   metadata_options {
@@ -182,7 +248,8 @@ resource "aws_eip" "harbor_registry" {
 # CloudWatch Log Group for Harbor logs
 resource "aws_cloudwatch_log_group" "harbor_logs" {
   name              = "/aws/ec2/harbor/${var.environment}"
-  retention_in_days = 30
+  retention_in_days = 365
+  kms_key_id        = aws_kms_key.registry_storage.arn
 
   tags = {
     Name        = "${var.environment}-harbor-logs"

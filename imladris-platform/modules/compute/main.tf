@@ -39,7 +39,7 @@ resource "aws_eks_cluster" "main" {
 # CloudWatch Log Group for EKS
 resource "aws_cloudwatch_log_group" "eks_cluster" {
   name              = "/aws/eks/imladris-${var.environment}-cluster/cluster"
-  retention_in_days = 30
+  retention_in_days = 365
   kms_key_id        = aws_kms_key.eks.arn  # Trivy: AVD-AWS-0017
 }
 
@@ -246,5 +246,21 @@ resource "aws_vpclattice_service_network_service_association" "eks_api" {
 
   tags = {
     Name = "imladris-${var.environment}-eks-api-association"
+  }
+}
+
+# ===== OIDC PROVIDER FOR IRSA =====
+# Enables Kubernetes service accounts to assume IAM roles (e.g., database access)
+data "tls_certificate" "eks" {
+  url = aws_eks_cluster.main.identity[0].oidc[0].issuer
+}
+
+resource "aws_iam_openid_connect_provider" "eks" {
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [data.tls_certificate.eks.certificates[0].sha1_fingerprint]
+  url             = aws_eks_cluster.main.identity[0].oidc[0].issuer
+
+  tags = {
+    Name = "imladris-${var.environment}-eks-oidc"
   }
 }

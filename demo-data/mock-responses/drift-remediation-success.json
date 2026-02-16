@@ -1,0 +1,33 @@
+{
+  "remediation_id": "rem-demo-12345",
+  "timestamp": "2026-03-15T14:30:00Z",
+  "status": "SUCCESS",
+  "config_rule": "no-public-ingress",
+  "resource": {
+    "type": "AWS::EC2::SecurityGroup",
+    "id": "sg-0abc123def456789",
+    "region": "us-east-1"
+  },
+  "violation": {
+    "type": "SECURITY_GROUP_OPEN_TO_WORLD",
+    "details": "Ingress rule allowed SSH (port 22) from 0.0.0.0/0",
+    "detected_at": "2026-03-15T14:29:55Z"
+  },
+  "remediation": {
+    "action": "REVOKE_INGRESS_RULE",
+    "ssm_document": "AWS-RevokeSecurityGroupIngress",
+    "execution_id": "exec-0abc123def456789",
+    "duration_ms": 1234,
+    "result": "Security group rule revoked successfully"
+  },
+  "notification": {
+    "sns_topic": "arn:aws:sns:us-east-1:123456789012:security-alerts",
+    "message_id": "msg-xyz789",
+    "sent_to": ["security-team@imladris.bank", "devops@imladris.bank"]
+  },
+  "audit": {
+    "cloudwatch_log_group": "/aws/config/remediation",
+    "cloudtrail_event_id": "abc123-def456-xyz789"
+  },
+  "_comment": "NOTE: Update timestamps before demos to ensure they appear current. Consider using scripts to generate dynamic timestamps."
+}

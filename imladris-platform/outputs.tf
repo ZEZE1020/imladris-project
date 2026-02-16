@@ -66,3 +66,31 @@ output "eventbridge_rule_name" {
 #   value       = module.secure_registry.admin_password_ssm_parameter
 #   sensitive   = false
 # }
+
+# ===== Database Module Outputs =====
+
+output "aurora_cluster_endpoint" {
+  description = "Aurora cluster writer endpoint for database connections"
+  value       = module.database.cluster_endpoint
+}
+
+output "aurora_cluster_reader_endpoint" {
+  description = "Aurora cluster reader endpoint for read replicas"
+  value       = module.database.cluster_reader_endpoint
+}
+
+output "aurora_database_name" {
+  description = "Default database name"
+  value       = module.database.database_name
+}
+
+output "aurora_db_access_role_arn" {
+  description = "IAM role ARN for pod-level DB access (annotate K8s service account)"
+  value       = module.database.db_access_role_arn
+}
+
+output "aurora_master_secret_arn" {
+  description = "Secrets Manager ARN for the auto-managed master password"
+  value       = module.database.master_secret_arn
+  sensitive   = true
+}
