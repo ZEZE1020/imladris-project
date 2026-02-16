@@ -18,7 +18,17 @@ resource "aws_lb" "private_ingress" {
   load_balancer_type = "network"
   subnets            = var.private_subnet_ids
 
-  enable_deletion_protection = var.enable_deletion_protection
+  enable_deletion_protection    = var.enable_deletion_protection
+  enable_cross_zone_load_balancing = true
+
+  dynamic "access_logs" {
+    for_each = var.enable_access_logging ? [1] : []
+    content {
+      bucket  = aws_s3_bucket.nlb_access_logs[0].id
+      prefix  = "nlb-logs"
+      enabled = true
+    }
+  }
 
   tags = {
     Name        = "imladris-${var.environment}-private-ingress"
@@ -171,10 +181,101 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "nlb_access_logs" 
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "aws:kms"
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.nlb_logs[0].arn
+    }
+    bucket_key_enabled = true
+  }
+}
+
+# KMS CMK for NLB access logs S3 bucket
+resource "aws_kms_key" "nlb_logs" {
+  count                   = var.enable_access_logging ? 1 : 0
+  description             = "CMK for NLB access logs S3 bucket encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow ELB Service"
+        Effect = "Allow"
+        Principal = {
+          Service = "delivery.logs.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = {
+    Name        = "imladris-${var.environment}-nlb-logs-key"
+    Environment = var.environment
+  }
+}
+
+# S3 Bucket Versioning for NLB access logs
+resource "aws_s3_bucket_versioning" "nlb_access_logs" {
+  count  = var.enable_access_logging ? 1 : 0
+  bucket = aws_s3_bucket.nlb_access_logs[0].id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# S3 Bucket Logging for NLB access logs (self-logging)
+resource "aws_s3_bucket_logging" "nlb_access_logs" {
+  count  = var.enable_access_logging ? 1 : 0
+  bucket = aws_s3_bucket.nlb_access_logs[0].id
+
+  target_bucket = aws_s3_bucket.nlb_access_logs[0].id
+  target_prefix = "access-logs/"
+}
+
+# S3 Bucket Lifecycle Configuration
+resource "aws_s3_bucket_lifecycle_configuration" "nlb_access_logs" {
+  count  = var.enable_access_logging ? 1 : 0
+  bucket = aws_s3_bucket.nlb_access_logs[0].id
+
+  rule {
+    id     = "log-retention"
+    status = "Enabled"
+
+    transition {
+      days          = 90
+      storage_class = "STANDARD_IA"
+    }
+
+    transition {
+      days          = 180
+      storage_class = "GLACIER"
+    }
+
+    expiration {
+      days = 365
     }
   }
 }
+
+data "aws_caller_identity" "current" {}
 
 resource "random_string" "suffix" {
   length  = 8
