@@ -22,7 +22,7 @@ A Zero Trust AWS environment for financial services. Implements private networki
 ---
 
 ## Architecture
-![Aarchitecture-diagram](docs/diagram-export-2-17-2026-7_53_02-PM.png)
+![Aarchitecture-diagram](docs/diagram-export-2-18-2026-6_39_11-PM.svg)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
